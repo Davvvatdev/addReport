@@ -23,7 +23,8 @@ export default async function StatsPage() {
   const categoryStats = await Promise.all(
     categories.map(async (cat) => {
       const count = await prisma.report.count({ where: { categoryId: cat.id } });
-      return { name: cat.titleFa.split(' ')[1] || cat.titleFa, count };
+      const cleanName = cat.titleFa.replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').trim();
+      return { name: cleanName, count };
     })
   );
 

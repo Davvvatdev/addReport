@@ -7,8 +7,8 @@ import { Home, Map, List, BarChart3, PlusCircle } from 'lucide-react';
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // Hide on wizard, feedback and dashboard
-  if (pathname?.startsWith('/report') || pathname?.startsWith('/feedback') || pathname?.startsWith('/dashboard')) {
+  // Hide on feedback and dashboard
+  if (pathname?.startsWith('/feedback') || pathname?.startsWith('/dashboard')) {
     return null;
   }
 

@@ -115,6 +115,10 @@ export default function ReportWizard() {
   const stationList = useMemo(() => {
     if (!meta || mode !== 'metro') return [];
     const q = normalizeFa(query);
+    
+    // اگر نه خطی انتخاب شده و نه جستجویی انجام شده، لیست خالی بماند
+    if (!lineId && !q) return [];
+    
     let list = meta.stations.filter(
       (s) => (!lineId || s.lineIds.includes(lineId)) && (!q || normalizeFa(s.name).includes(q)),
     );
@@ -244,9 +248,16 @@ export default function ReportWizard() {
           <p dir="ltr" className="mt-1 text-2xl font-bold tracking-widest text-slate-900">{done.code}</p>
         </div>
         {result?.stationWeekCount != null && result.stationName && !done.sensitive && (
-          <p className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-medium text-blue-900">
-            این <b>{toFa(result.stationWeekCount)}</b>‌امین گزارش از ایستگاه «{result.stationName}» در ۷ روز گذشته است.
-          </p>
+          <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-medium text-blue-900">
+            <p>
+              این <b>{toFa(result.stationWeekCount)}</b>‌امین گزارش از ایستگاه «{result.stationName}» در ۷ روز گذشته است.
+            </p>
+            {done.stationId && (
+              <Link href={`/public/list?station=${done.stationId}`} className="block w-full rounded-lg bg-blue-600 py-2.5 text-center font-bold text-white shadow-sm active:bg-blue-700">
+                مشاهده وضعیت این ایستگاه
+              </Link>
+            )}
+          </div>
         )}
         {done.sensitive && (
           <div className="space-y-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-right">
@@ -287,10 +298,10 @@ export default function ReportWizard() {
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white/95 backdrop-blur">
         <div className="flex items-center gap-2 px-3 py-2">
-          {step === 1 ? (
-            <Link href="/" aria-label="صفحه اصلی" className="flex h-11 w-11 items-center justify-center rounded-xl active:bg-slate-100"><Home size={22} /></Link>
-          ) : (
+          {step > 1 && !submitted ? (
             <button onClick={back} aria-label="بازگشت" className="flex h-11 w-11 items-center justify-center rounded-xl active:bg-slate-100"><ArrowRight size={22} /></button>
+          ) : (
+            <div className="w-11" /> /* Spacer to keep title centered if needed, or just nothing */
           )}
           <h1 className="flex-1 text-lg font-bold">
             {step === 1 ? 'کجا هستید؟' : step === 2 ? (category ? clean(category.titleFa) : 'چه مشکلی؟') : 'جزئیات'}
@@ -366,12 +377,20 @@ export default function ReportWizard() {
                       aria-pressed={stationId === s.id}
                       className={`flex min-h-12 w-full items-center justify-between px-4 text-right ${stationId === s.id ? 'bg-blue-50 font-bold text-blue-700' : ''}`}
                     >
-                      <span>{s.name}{s.isInterchange && <span className="mr-2 text-xs text-slate-400">تبادلی</span>}</span>
+                      <span>
+                        {s.name}
+                        {s.isInterchange && <span className="mr-2 text-xs text-slate-400">تبادلی</span>}
+                        {!lineId && query && <span className="mr-2 text-[10px] text-blue-600 bg-blue-50 px-2 py-1 rounded-full">{meta.lines.filter(l => s.lineIds.includes(l.id)).map(l => l.name).join('، ')}</span>}
+                      </span>
                       {stationId === s.id && <Check size={18} />}
                     </button>
                   </li>
                 ))}
-                {stationList.length === 0 && <li className="p-4 text-center text-sm text-slate-500">ایستگاهی پیدا نشد</li>}
+                {stationList.length === 0 && (
+                  <li className="p-4 text-center text-sm text-slate-500">
+                    {!lineId && !query ? 'لطفاً یک خط را انتخاب کنید یا نام ایستگاه را جستجو کنید.' : 'ایستگاهی پیدا نشد'}
+                  </li>
+                )}
               </ul>
             </section>
           ) : (

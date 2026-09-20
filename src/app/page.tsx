@@ -31,20 +31,26 @@ export default async function Home() {
               </div>
             </div>
           </div>
-          <Surface className="overflow-hidden border-blue-100 bg-blue-600 text-white shadow-xl shadow-blue-600/20">
-            <Link href="/report" className="block p-5 active:bg-blue-700">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-bold text-blue-100">مسافر عجله دارد؛ فرم نباید داشته باشد.</p>
-                  <p className="mt-2 text-3xl font-black">ثبت گزارش</p>
-                  <p className="mt-2 text-sm font-medium text-blue-50">زیر ۳۰ ثانیه، بدون تایپ، حتی با اینترنت ضعیف</p>
+          <section className="overflow-hidden rounded-lg border border-blue-700 bg-blue-700 text-white shadow-xl shadow-blue-700/20">
+            <Link href="/report" className="block p-5 active:bg-blue-800 transition-colors">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-blue-50 opacity-90">مسافر عجله دارد؛ فرم نباید داشته باشد.</p>
+                    <p className="mt-1 text-3xl font-black text-white">ثبت گزارش</p>
+                    <p className="mt-1 text-sm font-medium text-blue-50 opacity-90">زیر ۳۰ ثانیه، بدون تایپ، حتی با اینترنت ضعیف</p>
+                  </div>
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white">
+                    <PlusCircle size={32} />
+                  </span>
                 </div>
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/15">
-                  <PlusCircle size={34} />
-                </span>
+                <div className="mt-2 flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-white text-lg font-extrabold text-blue-700 shadow-sm active:bg-blue-50">
+                  <PlusCircle size={22} />
+                  شروع ثبت گزارش
+                </div>
               </div>
             </Link>
-          </Surface>
+          </section>
         </header>
 
         <div className="grid grid-cols-2 gap-3">

@@ -117,7 +117,7 @@ async function main() {
     { name: 'توحید', lines: '["line-4", "line-7"]', isInterchange: true },
     { name: 'دکتر حبیب‌الله', lines: '["line-4"]' },
     { name: 'استاد معین', lines: '["line-4"]' },
-    { name: 'میدان آزادی', lines: '["line-4"]', lat: 35.6997, lng: 51.3479 },
+    { name: 'میدان آزادی', lines: '["line-4", "brt-1"]', lat: 35.6997, lng: 51.3479, isInterchange: true },
     { name: 'بیمه', lines: '["line-4"]' },
     { name: 'شهرک اکباتان', lines: '["line-4"]' },
     { name: 'ارم سبز', lines: '["line-4", "line-5"]', isInterchange: true },
@@ -145,7 +145,6 @@ async function main() {
     { name: 'بهبودی', lines: '["brt-1"]' },
     { name: 'دانشگاه شریف', lines: '["brt-1"]' },
     { name: 'استاد معین', lines: '["brt-1"]' },
-    { name: 'میدان آزادی', lines: '["brt-1"]', lat: 35.6997, lng: 51.3479, isInterchange: true },
 
     // BRT Line 7 (Rah Ahan to Tajrish)
     { name: 'میدان تجریش', lines: '["brt-7"]', isInterchange: true },

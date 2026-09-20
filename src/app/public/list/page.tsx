@@ -145,7 +145,18 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
           </li>
           ))}
           {items.length === 0 && (
-            <li className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">گزارشی با این فیلتر پیدا نشد.</li>
+            <li className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-slate-200 bg-white p-10 text-center shadow-sm">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                <FileText size={32} />
+              </div>
+              <div>
+                <p className="font-extrabold text-slate-700">هیچ گزارشی یافت نشد</p>
+                <p className="mt-1 text-sm text-slate-500">برای این فیلتر هنوز هیچکس گزارشی ثبت نکرده است.</p>
+              </div>
+              <Link href="/report" className="mt-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm active:bg-blue-700">
+                اولین گزارش را ثبت کنید
+              </Link>
+            </li>
           )}
         </ul>
 
