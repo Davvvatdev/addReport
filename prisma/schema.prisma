@@ -1,0 +1,95 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Report {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  occurredAt      DateTime @default(now())
+  mode            String   // "metro" | "bus" | "brt"
+  lineId          String?
+  stationId       String?
+  direction       String?  // نام ایستگاه مقصد | unknown
+  vehicleContext  String   // "in_station" | "on_vehicle" | "transfer_point"
+  categoryId      String
+  subcategoryId   String
+  description     String?
+  photoUrl        String?
+  lat             Float?
+  lng             Float?
+  severity        String   @default("medium") // "low" | "medium" | "high"
+  isAnonymous     Boolean  @default(true)
+  reporterToken   String
+  status          String   @default("submitted") // "submitted" | "under_review" | "acknowledged" | "resolved"
+  syncStatus      String   @default("synced") // "synced" | "pending"
+  
+  line            Line?        @relation(fields: [lineId], references: [id])
+  station         Station?     @relation(fields: [stationId], references: [id])
+  category        Category     @relation(fields: [categoryId], references: [id])
+  subcategory     Subcategory  @relation(fields: [subcategoryId], references: [id])
+
+  @@map("reports")
+}
+
+model Line {
+  id      String   @id @default(uuid())
+  name    String
+  mode    String   // "metro" | "bus" | "brt"
+  color   String?
+  reports Report[]
+
+  @@map("lines")
+}
+
+model Station {
+  id            String   @id @default(uuid())
+  name          String
+  lines         String   // JSON string of lines
+  lat           Float?
+  lng           Float?
+  isInterchange Boolean  @default(false)
+  reports       Report[]
+
+  @@map("stations")
+}
+
+model Category {
+  id            String        @id
+  titleFa       String
+  sortOrder     Int           @default(0)
+  icon          String?
+  subcategories Subcategory[]
+  reports       Report[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id           String   @id
+  categoryId   String
+  titleFa      String
+  allowsPhoto  Boolean  @default(false)
+  isSensitive  Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  icon         String?
+  category     Category @relation(fields: [categoryId], references: [id])
+  reports      Report[]
+
+  @@map("subcategories")
+}
+
+model Feedback {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  susScores     String   // JSON string
+  freeComment   String?
+  reporterToken String
+
+  @@map("feedback")
+}
+
