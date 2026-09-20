@@ -2,7 +2,7 @@ import Dexie, { Table } from 'dexie';
 
 export interface OfflineReport {
   id?: number;
-  uuid: string; // UUID generated locally
+  uuid: string; // UUID generated locally; becomes the server id
   mode: string;
   lineId?: string;
   stationId?: string;
@@ -11,12 +11,13 @@ export interface OfflineReport {
   categoryId: string;
   subcategoryId: string;
   description?: string;
-  photoUrl?: string; // We'll store base64 strings if offline, or object urls
+  photoData?: string; // compressed data URL, uploaded after the text report
   lat?: number;
   lng?: number;
   severity: string;
   isAnonymous: boolean;
   reporterToken: string;
+  occurredAt: Date;
   createdAt: Date;
   syncStatus: 'pending' | 'synced' | 'failed';
 }
@@ -33,4 +34,3 @@ export class ReportDatabase extends Dexie {
 }
 
 export const db = new ReportDatabase();
-

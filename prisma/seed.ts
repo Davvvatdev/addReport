@@ -3,88 +3,19 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('Seeding categories and subcategories...')
+  console.log('Seeding lines and stations...')
 
-  // Categories
-  const categories = [
-    { id: '1', titleFa: 'مسائل زمانی 🕐', sortOrder: 1 },
-    { id: '2', titleFa: 'مسائل عملیاتی ⚙️', sortOrder: 2 },
-    { id: '3', titleFa: 'مسائل کالبدی و محیطی 🏗️', sortOrder: 3 },
-    { id: '4', titleFa: 'مسائل اجتماعی و امنیتی 🛡️', sortOrder: 4 },
-    { id: '5', titleFa: 'مسائل اطلاع‌رسانی 📢', sortOrder: 5 },
-    { id: '6', titleFa: 'مسائل کرایه و پرداخت 💳', sortOrder: 6 },
-    { id: '7', titleFa: 'سایر ✏️', sortOrder: 7 },
-  ]
-
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { id: cat.id },
-      update: cat,
-      create: cat,
-    })
-  }
-
-  // Subcategories
-  const subcategories = [
-    // Category 1
-    { id: '1-1', categoryId: '1', titleFa: 'تأخیر در رسیدن قطار/اتوبوس', allowsPhoto: false, isSensitive: false },
-    { id: '1-2', categoryId: '1', titleFa: 'فاصله زمانی طولانی بین سرویس‌ها', allowsPhoto: false, isSensitive: false },
-    { id: '1-3', categoryId: '1', titleFa: 'عدم تطابق با زمان‌بندی اعلام‌شده', allowsPhoto: false, isSensitive: false },
-    { id: '1-4', categoryId: '1', titleFa: 'از دست دادن اتصال در ایستگاه تبادلی', allowsPhoto: false, isSensitive: false },
-    { id: '1-5', categoryId: '1', titleFa: 'شروع دیرهنگام یا قطع زودهنگام سرویس', allowsPhoto: false, isSensitive: false },
-    // Category 2
-    { id: '2-1', categoryId: '2', titleFa: 'توقف یا اختلال در حرکت', allowsPhoto: false, isSensitive: false },
-    { id: '2-2', categoryId: '2', titleFa: 'ازدحام بیش از ظرفیت', allowsPhoto: true, isSensitive: false },
-    { id: '2-3', categoryId: '2', titleFa: 'کمبود ناوگان در ساعت اوج', allowsPhoto: false, isSensitive: false },
-    { id: '2-4', categoryId: '2', titleFa: 'عدم توقف در ایستگاه', allowsPhoto: false, isSensitive: false },
-    { id: '2-5', categoryId: '2', titleFa: 'تغییر مسیر بدون اطلاع‌رسانی', allowsPhoto: false, isSensitive: false },
-    // Category 3
-    { id: '3-1', categoryId: '3', titleFa: 'پله‌برقی خراب', allowsPhoto: true, isSensitive: false },
-    { id: '3-2', categoryId: '3', titleFa: 'آسانسور خراب یا موجود نبودن', allowsPhoto: true, isSensitive: false },
-    { id: '3-3', categoryId: '3', titleFa: 'تهویه نامناسب (گرما/سرما)', allowsPhoto: false, isSensitive: false },
-    { id: '3-4', categoryId: '3', titleFa: 'روشنایی ناکافی', allowsPhoto: true, isSensitive: false },
-    { id: '3-5', categoryId: '3', titleFa: 'نظافت نامناسب', allowsPhoto: true, isSensitive: false },
-    { id: '3-6', categoryId: '3', titleFa: 'خرابی درب، صندلی یا تجهیزات', allowsPhoto: true, isSensitive: false },
-    { id: '3-7', categoryId: '3', titleFa: 'مشکل دسترسی افراد دارای معلولیت', allowsPhoto: true, isSensitive: false },
-    { id: '3-8', categoryId: '3', titleFa: 'خرابی دستگاه بلیت یا گیت', allowsPhoto: true, isSensitive: false },
-    // Category 4
-    { id: '4-1', categoryId: '4', titleFa: 'مزاحمت کلامی', allowsPhoto: false, isSensitive: true },
-    { id: '4-2', categoryId: '4', titleFa: 'مزاحمت یا آزار فیزیکی', allowsPhoto: false, isSensitive: true },
-    { id: '4-3', categoryId: '4', titleFa: 'جیب‌بری یا سرقت', allowsPhoto: false, isSensitive: true },
-    { id: '4-4', categoryId: '4', titleFa: 'احساس ناامنی در محیط', allowsPhoto: false, isSensitive: true },
-    { id: '4-5', categoryId: '4', titleFa: 'درگیری یا نزاع', allowsPhoto: false, isSensitive: true },
-    { id: '4-6', categoryId: '4', titleFa: 'حضور افراد در وضعیت بحران', allowsPhoto: false, isSensitive: false },
-    { id: '4-7', categoryId: '4', titleFa: 'دستفروشی مزاحم', allowsPhoto: true, isSensitive: false },
-    { id: '4-8', categoryId: '4', titleFa: 'رفتار ناهنجار (سیگار، سروصدا)', allowsPhoto: false, isSensitive: false },
-    // Category 5
-    { id: '5-1', categoryId: '5', titleFa: 'نبود اطلاع‌رسانی درباره اختلال', allowsPhoto: false, isSensitive: false },
-    { id: '5-2', categoryId: '5', titleFa: 'تابلوی اطلاعات خراب یا خاموش', allowsPhoto: true, isSensitive: false },
-    { id: '5-3', categoryId: '5', titleFa: 'اعلام زمان نادرست', allowsPhoto: true, isSensitive: false },
-    { id: '5-4', categoryId: '5', titleFa: 'نبود راهنمای مسیر یا تابلوی جهت‌یابی', allowsPhoto: true, isSensitive: false },
-    // Category 6
-    { id: '6-1', categoryId: '6', titleFa: 'مشکل در شارژ کارت بلیت', allowsPhoto: true, isSensitive: false },
-    { id: '6-2', categoryId: '6', titleFa: 'کسر اشتباه وجه', allowsPhoto: true, isSensitive: false },
-    { id: '6-3', categoryId: '6', titleFa: 'خرابی گیت یا دستگاه اعتبارسنجی', allowsPhoto: true, isSensitive: false },
-    { id: '6-4', categoryId: '6', titleFa: 'عدم پذیرش کارت', allowsPhoto: true, isSensitive: false },
-    // Category 7
-    { id: '7-1', categoryId: '7', titleFa: 'سایر موارد', allowsPhoto: true, isSensitive: false },
-  ]
-
-  for (const sub of subcategories) {
-    await prisma.subcategory.upsert({
-      where: { id: sub.id },
-      update: sub,
-      create: sub,
-    })
-  }
-
-  console.log('Seeding stations (Mock Data)...')
-  
+  // Lines
   const lines = [
-    { id: 'line-1', name: 'خط ۱', mode: 'metro', color: '#E3000F' },
-    { id: 'line-2', name: 'خط ۲', mode: 'metro', color: '#0039A6' },
-    { id: 'line-3', name: 'خط ۳', mode: 'metro', color: '#00BCE4' },
-    { id: 'line-4', name: 'خط ۴', mode: 'metro', color: '#FFD700' },
+    { id: 'line-1', name: 'خط ۱ (تجریش - کهریزک)', mode: 'metro', color: '#E3000F' },
+    { id: 'line-2', name: 'خط ۲ (صادقیه - فرهنگسرا)', mode: 'metro', color: '#0039A6' },
+    { id: 'line-3', name: 'خط ۳ (قائم - آزادگان)', mode: 'metro', color: '#00BCE4' },
+    { id: 'line-4', name: 'خط ۴ (شهید کلاهدوز - ارم سبز)', mode: 'metro', color: '#FFD700' },
+    { id: 'line-5', name: 'خط ۵ (صادقیه - گلشهر)', mode: 'metro', color: '#008000' },
+    { id: 'line-6', name: 'خط ۶ (دولت‌آباد - کوهسار)', mode: 'metro', color: '#FF69B4' },
+    { id: 'line-7', name: 'خط ۷ (بسیج - میدان کتاب)', mode: 'metro', color: '#8A2BE2' },
+    { id: 'brt-1', name: 'خط ۱ BRT (چهارراه تهرانپارس - آزادی)', mode: 'brt', color: '#FF0000' },
+    { id: 'brt-7', name: 'خط ۷ BRT (راه‌آهن - تجریش)', mode: 'brt', color: '#00FF00' },
   ]
 
   for (const line of lines) {
@@ -95,23 +26,177 @@ async function main() {
     })
   }
 
-  const stations = [
-    { id: 'st-1', name: 'صادقیه', lines: '["line-2"]', lat: 35.7197, lng: 51.3464, isInterchange: true },
-    { id: 'st-2', name: 'امام خمینی', lines: '["line-1", "line-2"]', lat: 35.6865, lng: 51.4208, isInterchange: true },
-    { id: 'st-3', name: 'هفت‌تیر', lines: '["line-1"]', lat: 35.7188, lng: 51.4278, isInterchange: true },
-    { id: 'st-4', name: 'تئاتر شهر', lines: '["line-3", "line-4"]', lat: 35.7009, lng: 51.4020, isInterchange: true },
-    { id: 'st-5', name: 'آزادی', lines: '["line-4"]', lat: 35.6997, lng: 51.3479, isInterchange: true },
+  const stationsData = [
+    // Line 1
+    { name: 'تجریش', lines: '["line-1"]', lat: 35.8055, lng: 51.4284 },
+    { name: 'قیطریه', lines: '["line-1"]' },
+    { name: 'شهید صدر', lines: '["line-1"]' },
+    { name: 'قلهک', lines: '["line-1"]' },
+    { name: 'دکتر شریعتی', lines: '["line-1"]' },
+    { name: 'میرداماد', lines: '["line-1"]' },
+    { name: 'شهید حقانی', lines: '["line-1"]' },
+    { name: 'شهید همت', lines: '["line-1"]' },
+    { name: 'مصلی امام خمینی', lines: '["line-1"]' },
+    { name: 'شهید بهشتی', lines: '["line-1", "line-3"]', isInterchange: true },
+    { name: 'شهید مفتح', lines: '["line-1"]' },
+    { name: 'شهدای هفتم تیر', lines: '["line-1", "line-6"]', isInterchange: true },
+    { name: 'طالقانی', lines: '["line-1"]' },
+    { name: 'دروازه دولت', lines: '["line-1", "line-4"]', isInterchange: true },
+    { name: 'سعدی', lines: '["line-1"]' },
+    { name: 'امام خمینی', lines: '["line-1", "line-2"]', lat: 35.6865, lng: 51.4208, isInterchange: true },
+    { name: 'پانزده خرداد', lines: '["line-1"]' },
+    { name: 'خیام', lines: '["line-1"]' },
+    { name: 'میدان محمدیه', lines: '["line-1", "line-7"]', isInterchange: true },
+    { name: 'شوش', lines: '["line-1"]' },
+    { name: 'پایانه جنوب', lines: '["line-1"]' },
+    { name: 'شهید بخارایی', lines: '["line-1"]' },
+    { name: 'علی‌آباد', lines: '["line-1"]' },
+    { name: 'جوانمرد قصاب', lines: '["line-1"]' },
+    { name: 'شهرری', lines: '["line-1"]' },
+    { name: 'پالایشگاه', lines: '["line-1"]' },
+    { name: 'شاهد - باقرشهر', lines: '["line-1"]' },
+    { name: 'حرم امام خمینی', lines: '["line-1"]' },
+    { name: 'کهریزک', lines: '["line-1"]' },
+
+    // Line 2
+    { name: 'صادقیه', lines: '["line-2", "line-5"]', lat: 35.7197, lng: 51.3464, isInterchange: true },
+    { name: 'طرشت', lines: '["line-2"]' },
+    { name: 'دانشگاه شریف', lines: '["line-2"]' },
+    { name: 'شادمان', lines: '["line-2", "line-4"]', isInterchange: true },
+    { name: 'شهید نواب صفوی', lines: '["line-2", "line-7"]', isInterchange: true },
+    { name: 'میدان حر', lines: '["line-2"]' },
+    { name: 'دانشگاه امام علی', lines: '["line-2"]' },
+    { name: 'حسن‌آباد', lines: '["line-2"]' },
+    { name: 'ملت', lines: '["line-2"]' },
+    { name: 'بهارستان', lines: '["line-2"]' },
+    { name: 'دروازه شمیران', lines: '["line-2", "line-4"]', isInterchange: true },
+    { name: 'امام حسین', lines: '["line-2", "line-6"]', isInterchange: true },
+    { name: 'شهید مدنی', lines: '["line-2"]' },
+    { name: 'سبلان', lines: '["line-2"]' },
+    { name: 'فدک', lines: '["line-2"]' },
+    { name: 'جانبازان', lines: '["line-2"]' },
+    { name: 'سرسبز', lines: '["line-2"]' },
+    { name: 'دانشگاه علم و صنعت', lines: '["line-2"]' },
+    { name: 'شهید باقری', lines: '["line-2"]' },
+    { name: 'تهرانپارس', lines: '["line-2"]' },
+    { name: 'فرهنگسرا', lines: '["line-2"]' },
+
+    // Line 3
+    { name: 'قائم', lines: '["line-3"]' },
+    { name: 'شهید محلاتی', lines: '["line-3"]' },
+    { name: 'نوبنیاد', lines: '["line-3"]' },
+    { name: 'حسین‌آباد', lines: '["line-3"]' },
+    { name: 'میدان هروی', lines: '["line-3"]' },
+    { name: 'شهید زین‌الدین', lines: '["line-3"]' },
+    { name: 'خواجه عبدالله انصاری', lines: '["line-3"]' },
+    { name: 'شهید صیاد شیرازی', lines: '["line-3"]' },
+    { name: 'شهید قدوسی', lines: '["line-3"]' },
+    { name: 'سهروردی', lines: '["line-3"]' },
+    { name: 'میرزای شیرازی', lines: '["line-3"]' },
+    { name: 'میدان جهاد', lines: '["line-3"]' },
+    { name: 'میدان ولیعصر', lines: '["line-3", "line-6"]', isInterchange: true },
+    { name: 'تئاتر شهر', lines: '["line-3", "line-4"]', lat: 35.7009, lng: 51.4020, isInterchange: true },
+    { name: 'منیریه', lines: '["line-3"]' },
+    { name: 'راه‌آهن', lines: '["line-3"]' },
+    { name: 'جوادیه', lines: '["line-3"]' },
+    { name: 'زمزم', lines: '["line-3"]' },
+    { name: 'شهرک شریعتی', lines: '["line-3"]' },
+    { name: 'عبدالآباد', lines: '["line-3"]' },
+    { name: 'نعمت‌آباد', lines: '["line-3"]' },
+    { name: 'آزادگان', lines: '["line-3"]' },
+
+    // Line 4
+    { name: 'شهید کلاهدوز', lines: '["line-4"]' },
+    { name: 'نیروی هوایی', lines: '["line-4"]' },
+    { name: 'نبرد', lines: '["line-4"]' },
+    { name: 'پیروزی', lines: '["line-4"]' },
+    { name: 'ابن‌سینا', lines: '["line-4"]' },
+    { name: 'میدان شهدا', lines: '["line-4", "line-6"]', isInterchange: true },
+    { name: 'فردوسی', lines: '["line-4"]' },
+    { name: 'میدان انقلاب اسلامی', lines: '["line-4"]' },
+    { name: 'توحید', lines: '["line-4", "line-7"]', isInterchange: true },
+    { name: 'دکتر حبیب‌الله', lines: '["line-4"]' },
+    { name: 'استاد معین', lines: '["line-4"]' },
+    { name: 'میدان آزادی', lines: '["line-4"]', lat: 35.6997, lng: 51.3479 },
+    { name: 'بیمه', lines: '["line-4"]' },
+    { name: 'شهرک اکباتان', lines: '["line-4"]' },
+    { name: 'ارم سبز', lines: '["line-4", "line-5"]', isInterchange: true },
+
+    // BRT Line 1 (Tehranpars to Azadi)
+    { name: 'چهارراه تهرانپارس', lines: '["brt-1"]' },
+    { name: 'داریوش', lines: '["brt-1"]' },
+    { name: 'آیت', lines: '["brt-1"]' },
+    { name: 'ابوریحان', lines: '["brt-1"]' },
+    { name: 'خاقانی', lines: '["brt-1"]' },
+    { name: 'وحیدیه', lines: '["brt-1"]' },
+    { name: 'سبلان', lines: '["brt-1"]' },
+    { name: 'فرودگاه', lines: '["brt-1"]' },
+    { name: 'منتظری', lines: '["brt-1"]' },
+    { name: 'میدان امام حسین (ع)', lines: '["brt-1"]', isInterchange: true },
+    { name: 'پل چوبی', lines: '["brt-1"]' },
+    { name: 'پیچ شمیران', lines: '["brt-1"]' },
+    { name: 'دروازه دولت', lines: '["brt-1"]', isInterchange: true },
+    { name: 'میدان فردوسی', lines: '["brt-1"]' },
+    { name: 'چهارراه ولیعصر (تئاتر شهر)', lines: '["brt-1", "brt-7"]', isInterchange: true },
+    { name: 'دانشگاه تهران', lines: '["brt-1"]' },
+    { name: 'میدان انقلاب اسلامی', lines: '["brt-1"]', isInterchange: true },
+    { name: 'قریب', lines: '["brt-1"]' },
+    { name: 'نواب', lines: '["brt-1"]', isInterchange: true },
+    { name: 'بهبودی', lines: '["brt-1"]' },
+    { name: 'دانشگاه شریف', lines: '["brt-1"]' },
+    { name: 'استاد معین', lines: '["brt-1"]' },
+    { name: 'میدان آزادی', lines: '["brt-1"]', lat: 35.6997, lng: 51.3479, isInterchange: true },
+
+    // BRT Line 7 (Rah Ahan to Tajrish)
+    { name: 'میدان تجریش', lines: '["brt-7"]', isInterchange: true },
+    { name: 'باغ فردوس', lines: '["brt-7"]' },
+    { name: 'محمودیه', lines: '["brt-7"]' },
+    { name: 'چهارراه پارک وی', lines: '["brt-7"]' },
+    { name: 'امانیه', lines: '["brt-7"]' },
+    { name: 'نیایش', lines: '["brt-7"]' },
+    { name: 'ظفر', lines: '["brt-7"]' },
+    { name: 'میرداماد', lines: '["brt-7"]' },
+    { name: 'میدان ونک', lines: '["brt-7"]', isInterchange: true },
+    { name: 'همت', lines: '["brt-7"]' },
+    { name: 'توانیر', lines: '["brt-7"]' },
+    { name: 'پله سوم', lines: '["brt-7"]' },
+    { name: 'شهید بهشتی', lines: '["brt-7"]', isInterchange: true },
+    { name: 'شهید مطهری', lines: '["brt-7"]' },
+    { name: 'میدان ولیعصر (عج)', lines: '["brt-7"]', isInterchange: true },
+    { name: 'طالقانی', lines: '["brt-7"]' },
+    { name: 'جمهوری', lines: '["brt-7"]' },
+    { name: 'جامی', lines: '["brt-7"]' },
+    { name: 'منیریه', lines: '["brt-7"]' },
+    { name: 'میدان قزوین', lines: '["brt-7"]' },
+    { name: 'مولوی', lines: '["brt-7"]' },
+    { name: 'مختاری', lines: '["brt-7"]' },
+    { name: 'میدان راه‌آهن', lines: '["brt-7"]', isInterchange: true },
   ]
 
-  for (const st of stations) {
+  let i = 1
+  for (const st of stationsData) {
+    const id = `st-bulk-${i++}`
     await prisma.station.upsert({
-      where: { id: st.id },
-      update: st,
-      create: st,
+      where: { id: id },
+      update: {
+        name: st.name,
+        lines: st.lines,
+        isInterchange: st.isInterchange || false,
+        lat: st.lat || null,
+        lng: st.lng || null
+      },
+      create: {
+        id: id,
+        name: st.name,
+        lines: st.lines,
+        isInterchange: st.isInterchange || false,
+        lat: st.lat || null,
+        lng: st.lng || null
+      },
     })
   }
 
-  console.log('Seed completed successfully.')
+  console.log(`Seeded ${stationsData.length} stations!`)
 }
 
 main()
@@ -122,4 +207,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-

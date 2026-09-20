@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "targets": {
+    "full-rtl-product-design": {
+      "projectId": "22e96faa-89f3-4675-9920-94e6246c47d6",
+      "activeDraftId": "bcefd8c4-afa8-4023-9f28-66e94c2304f9",
+      "title": "Full RTL Mobile App Design",
+      "canvasUrl": "https://superdesign.dev/teams/d6fd89c3-3129-47d7-acd1-8e85a2813857/projects/22e96faa-89f3-4675-9920-94e6246c47d6",
+      "previewUrl": "https://p.superdesign.dev/draft/bcefd8c4-afa8-4023-9f28-66e94c2304f9",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        ".superdesign/init/routes.md",
+        ".superdesign/init/pages.md",
+        "src/app/globals.css",
+        "src/app/page.tsx",
+        "src/components/ReportWizard.tsx",
+        "src/app/public/list/page.tsx",
+        "src/app/public/map/page.tsx",
+        "src/app/public/map/MapComponent.tsx",
+        "src/app/public/stats/page.tsx",
+        "src/app/public/stats/StatsChart.tsx",
+        "src/app/dashboard/page.tsx",
+        "src/app/feedback/page.tsx",
+        "src/app/privacy/page.tsx"
+      ],
+      "notes": "Initial Superdesign board covering Home, Report Wizard, Public List, Map, Stats/Open Data, Admin Dashboard, SUS Feedback, and Privacy."
+    }
+  }
+}
