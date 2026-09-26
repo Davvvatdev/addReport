@@ -1,30 +1,51 @@
 {
-  "version": 1,
+  "schemaVersion": 1,
   "targets": {
-    "full-rtl-product-design": {
-      "projectId": "22e96faa-89f3-4675-9920-94e6246c47d6",
-      "activeDraftId": "bcefd8c4-afa8-4023-9f28-66e94c2304f9",
-      "title": "Full RTL Mobile App Design",
-      "canvasUrl": "https://superdesign.dev/teams/d6fd89c3-3129-47d7-acd1-8e85a2813857/projects/22e96faa-89f3-4675-9920-94e6246c47d6",
-      "previewUrl": "https://p.superdesign.dev/draft/bcefd8c4-afa8-4023-9f28-66e94c2304f9",
+    "/profile": {
+      "targetKind": "existing-ui",
+      "projectId": "19280acc-8743-4697-aaa7-d7d0c46f9dc6",
+      "baselineDraftId": "e3ca5fd3-eca9-4b0e-b054-5f812408cd3a",
+      "activeDraftId": "41a77a5c-653d-4fd0-8f0b-b4374c8fb21a",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [
+        "b5671cff-ddae-471e-bec5-6a488b948c95"
+      ],
       "contextFiles": [
         ".superdesign/design-system.md",
         ".superdesign/init/theme.md",
-        ".superdesign/init/routes.md",
-        ".superdesign/init/pages.md",
         "src/app/globals.css",
-        "src/app/page.tsx",
-        "src/components/ReportWizard.tsx",
-        "src/app/public/list/page.tsx",
-        "src/app/public/map/page.tsx",
-        "src/app/public/map/MapComponent.tsx",
-        "src/app/public/stats/page.tsx",
-        "src/app/public/stats/StatsChart.tsx",
-        "src/app/dashboard/page.tsx",
-        "src/app/feedback/page.tsx",
-        "src/app/privacy/page.tsx"
+        "src/app/layout.tsx",
+        "src/app/profile/page.tsx",
+        "src/components/BottomNav.tsx",
+        "src/components/ui.tsx",
+        "src/lib/gamification.ts",
+        "src/lib/format.ts"
       ],
-      "notes": "Initial Superdesign board covering Home, Report Wizard, Public List, Map, Stats/Open Data, Admin Dashboard, SUS Feedback, and Privacy."
+      "fingerprints": {
+        ".superdesign/design-system.md": "3c1fc9fcb6ee8c8f887843c54a17bb1f81ae2259d7f976ad123fdf75d2af3925",
+        ".superdesign/init/theme.md": "2cbfd825d1bb5080a142e26831d22fc69a54a1f3e84e5b76a6977214c65f9698",
+        "src/app/globals.css": "5884b61c938978db6a13f00711d85542c8af30d7014fa0c35874b247cecca164",
+        "src/app/layout.tsx": "5768be6de4585e6e936a6052ab03cfd5ee6189967c70a4887379ef5fbabb2eee",
+        "src/app/profile/page.tsx": "71f85d13221a0626ef053fd2f3ad077fbf0ee970cbc84b3f302a1606c78af363",
+        "src/components/BottomNav.tsx": "c93bee988f0e81c50508b72ec8cb5877b010a2f053ceaa26b3bc84f779eeae8e",
+        "src/components/ui.tsx": "4a86a8afb36b2edc274ce134de13b64f83693c5c0951310b796889e0eaeba4ad",
+        "src/lib/gamification.ts": "cb92f4c365cdc76107f6a12ef48cc49dfed8a3b9c19ab0a2040d829ddb616308",
+        "src/lib/format.ts": "b64c6a2ea4403a719924ca93f9c7dbbd3e977ba7638f8425f1e83bc0558977b6"
+      },
+      "drafts": {
+        "e3ca5fd3-eca9-4b0e-b054-5f812408cd3a": {
+          "title": "Current Profile UI - Baseline",
+          "visualDirection": "pixel-perfect current profile reproduction",
+          "currentVersion": 1
+        },
+        "41a77a5c-653d-4fd0-8f0b-b4374c8fb21a": {
+          "title": "پروفایل شهروندی دیده‌بان",
+          "visualDirection": "friendly reference-inspired RTL mobile profile",
+          "parentDraftId": "e3ca5fd3-eca9-4b0e-b054-5f812408cd3a",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-09-26T15:06:30.000Z"
     }
   }
 }
