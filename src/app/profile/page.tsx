@@ -4,24 +4,33 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Award,
+  BadgeCheck,
   ChevronLeft,
-  ChevronRight,
+  CircleCheck,
+  Construction,
+  Crown,
   Gift,
   HelpCircle,
   History,
   Lock,
   MessageSquare,
-  QrCode,
+  FilePenLine,
+  Flag,
+  Lightbulb,
+  Recycle,
   Settings,
   Shield,
   Sparkles,
+  Star,
   Ticket,
+  ThumbsUp,
   Trophy,
   X,
   CheckCircle2,
   AlertCircle,
   Copy,
   Check,
+  Zap,
 } from 'lucide-react';
 import {
   Badge,
@@ -49,10 +58,12 @@ export default function ProfilePage() {
   const [selectedAvatar, setSelectedAvatar] = useState('👋');
 
   useEffect(() => {
-    const p = getCitizenProfile();
-    setProfile(p);
-    setCustomName(p.name);
-    setSelectedAvatar(p.avatar);
+    queueMicrotask(() => {
+      const p = getCitizenProfile();
+      setProfile(p);
+      setCustomName(p.name);
+      setSelectedAvatar(p.avatar);
+    });
 
     // بارگذاری گزارش‌های محلی ذخیره شده کاربر
     db.reports.toArray().then((items) => {
@@ -99,74 +110,76 @@ export default function ProfilePage() {
   }
 
   const AVATAR_OPTIONS = ['👋', '🦁', '🌟', '🚇', '🏙️', '🦸‍♂️', '🌱', '🚀'];
+  const unlockedBadgesCount = profile.badges.filter((b) => b.unlocked).length;
+  const badgeIconMap: Record<string, typeof Award> = {
+    first_report: Flag,
+    road_warrior: Construction,
+    trash_buster: Recycle,
+    night_owl: Lightbulb,
+    city_hero: Crown,
+    speed_reporter: Zap,
+  };
 
   return (
-    <main className="min-h-screen bg-slate-50/80 px-4 pb-28 pt-4">
+    <main className="min-h-screen bg-slate-50 px-4 pb-28 pt-4">
       <div className="mx-auto flex w-full max-w-md flex-col gap-5">
         
-        {/* هدر صفحه: مشابه موکاپ اصلی */}
-        <header className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">پروفایل شهروندی</h1>
+        <header className="flex items-center justify-between border-b border-slate-100 bg-white/80 pb-4 pt-1 backdrop-blur">
+          <div>
+            <p className="text-xs font-bold text-slate-500">باشگاه شهروندی دیده‌بان</p>
+            <h1 className="mt-0.5 text-2xl font-black tracking-normal text-slate-950">پروفایل شهروندی</h1>
           </div>
           <button
             onClick={() => setShowSettings(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-sm border border-slate-200/70 active:scale-95 transition-transform"
+            className="tap flex w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition active:scale-95 active:bg-slate-50"
             aria-label="تنظیمات پروفایل"
           >
-            <Settings size={20} />
+            <Settings size={21} />
           </button>
         </header>
 
-        {/* کارت کاربر با آواتار و برچسب سطح */}
-        <section className="flex items-center gap-4 rounded-3xl bg-white p-4 shadow-sm border border-slate-100">
-          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-100 via-sky-50 to-blue-100 text-3xl shadow-inner border border-sky-100">
+        <section className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40">
+          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-3xl text-blue-600">
             <span>{profile.avatar}</span>
-            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-black border-2 border-white shadow-sm">
-              ✓
+            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white shadow-sm">
+              <BadgeCheck size={13} />
             </span>
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-slate-900 truncate">{profile.name}</h2>
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="truncate text-lg font-black text-slate-950">{profile.name}</h2>
+              <BadgeCheck size={20} className="mt-1 shrink-0 text-emerald-500" />
             </div>
-            <p className="text-xs font-medium text-slate-500 mt-0.5">عضو دیده‌بان از {profile.joinedAt}</p>
-            <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-200/60">
-              <span>⭐</span>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">عضو دیده‌بان از {profile.joinedAt}</p>
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
+              <Star size={13} className="fill-amber-400 text-amber-500" />
               <span>{profile.levelTitle}</span>
             </div>
           </div>
         </section>
 
-        {/* کارت بزرگ و پرانرژی امتیاز و سکه شهروندی (عین موکاپ) */}
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 p-6 text-white shadow-xl shadow-sky-500/20">
-          {/* جلوه نور پس‌زمینه */}
-          <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-blue-700/30 blur-2xl" />
-
-          <div className="relative z-10 flex items-start justify-between">
+        <section className="rounded-2xl bg-blue-500 p-5 text-white shadow-lg shadow-blue-500/20">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-sky-100/90">سکه و امتیاز شهروندی (CityPulse)</p>
+              <p className="text-xs font-bold text-blue-100">سکه و امتیاز شهروندی (CityPulse)</p>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-4xl font-black tracking-tight">{toFa(profile.points.toLocaleString('fa-IR'))}</span>
-                <span className="text-sm font-bold text-sky-100">سکه</span>
+                <span className="text-sm font-bold text-blue-100">سکه</span>
               </div>
             </div>
 
-            {/* نشان سه بعدی جام قهرمانی */}
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/25">
-              <Trophy size={36} className="text-amber-300 drop-shadow-md animate-bounce" style={{ animationDuration: '3s' }} />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15 text-amber-300">
+              <Trophy size={30} />
             </div>
           </div>
 
-          {/* نوار پیشرفت سطح */}
-          <div className="relative z-10 mt-6">
-            <div className="flex items-center justify-between text-xs font-bold text-sky-100">
+          <div className="mt-5">
+            <div className="flex items-center justify-between text-xs font-bold text-blue-100">
               <span>سطح بعدی: {toFa(profile.nextLevelPoints.toLocaleString('fa-IR'))} امتیاز</span>
               <span>{toFa(profile.progressPercent)}٪</span>
             </div>
-            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-black/20 backdrop-blur-sm p-0.5">
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-blue-700/40 p-0.5">
               <div
                 className="h-full rounded-full bg-white transition-all duration-700 shadow-sm"
                 style={{ width: `${Math.min(100, Math.max(8, profile.progressPercent))}%` }}
@@ -175,65 +188,68 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* سه کارت آماری مربعی و مینیمال (عین موکاپ) */}
-        <section className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-white p-3.5 shadow-sm border border-slate-100 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 text-lg">
-              📝
+        <section className="grid grid-cols-3 gap-2.5">
+          <div className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <FilePenLine size={20} />
             </div>
-            <span className="mt-2 text-xl font-black text-slate-900">{toFa(profile.reportsCount)}</span>
-            <span className="text-xs font-medium text-slate-500">گزارش‌ها</span>
+            <span className="mt-1 text-xl font-black text-slate-950">{toFa(profile.reportsCount)}</span>
+            <span className="text-[11px] font-medium text-slate-500">گزارش‌ها</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-white p-3.5 shadow-sm border border-slate-100 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 text-lg">
-              ✅
+          <div className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <CircleCheck size={20} />
             </div>
-            <span className="mt-2 text-xl font-black text-slate-900">{toFa(profile.resolvedCount)}</span>
-            <span className="text-xs font-medium text-slate-500">رسیدگی‌شده</span>
+            <span className="mt-1 text-xl font-black text-slate-950">{toFa(profile.resolvedCount)}</span>
+            <span className="text-[11px] font-medium text-slate-500">رسیدگی‌شده</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-white p-3.5 shadow-sm border border-slate-100 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 text-lg">
-              👍
+          <div className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+              <ThumbsUp size={20} />
             </div>
-            <span className="mt-2 text-xl font-black text-slate-900">{toFa(profile.upvotesCount)}</span>
-            <span className="text-xs font-medium text-slate-500">اثرگذاری</span>
+            <span className="mt-1 text-xl font-black text-slate-950">{toFa(profile.upvotesCount)}</span>
+            <span className="text-[11px] font-medium text-slate-500">اثرگذاری</span>
           </div>
         </section>
 
-        {/* بخش نشان‌ها (Badges) با قابلیت لمس و نمایش توضیحات */}
-        <section className="rounded-3xl bg-white p-4 shadow-sm border border-slate-100">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-extrabold text-slate-900 text-base">نشان‌های افتخار</h3>
-            <span className="text-xs font-bold text-sky-600 cursor-pointer">
-              {toFa(profile.badges.filter((b) => b.unlocked).length)} از {toFa(profile.badges.length)} نشان
+            <h3 className="text-base font-extrabold text-slate-950">نشان‌های افتخار</h3>
+            <span className="text-xs font-bold text-blue-600">
+              {toFa(unlockedBadgesCount)} از {toFa(profile.badges.length)} نشان
             </span>
           </div>
 
-          <div className="grid grid-cols-4 gap-2.5 text-center">
+          <div className="scrollbar-none flex gap-3 overflow-x-auto pb-1 text-center">
             {profile.badges.map((badge) => (
               <button
                 key={badge.id}
                 onClick={() => setSelectedBadge(badge)}
-                className={`group flex flex-col items-center rounded-2xl p-2 transition-all active:scale-95 ${
-                  badge.unlocked ? 'hover:bg-slate-50' : 'opacity-50 grayscale'
+                className={`group flex w-16 shrink-0 flex-col items-center rounded-2xl p-1 transition active:scale-95 ${
+                  badge.unlocked ? 'hover:bg-slate-50' : 'opacity-50'
                 }`}
               >
+                {(() => {
+                  const Icon = badgeIconMap[badge.id] || Award;
+                  return (
                 <div
-                  className={`relative flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-sm transition-all ${
+                  className={`relative flex h-12 w-12 items-center justify-center rounded-full text-lg transition ${
                     badge.unlocked
-                      ? 'bg-gradient-to-b from-white to-slate-100 border border-slate-200/80 shadow-slate-200'
-                      : 'bg-slate-100 border border-dashed border-slate-300'
+                      ? 'border border-slate-200 bg-slate-50 text-blue-600'
+                      : 'border border-dashed border-slate-300 bg-slate-100 text-slate-400'
                   }`}
                 >
-                  <span>{badge.icon}</span>
+                  <Icon size={20} />
                   {!badge.unlocked && (
-                    <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-200/60 backdrop-blur-[1px]">
-                      <Lock size={15} className="text-slate-600" />
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-100/75">
+                      <Lock size={14} className="text-slate-500" />
                     </div>
                   )}
                 </div>
+                  );
+                })()}
                 <span className="mt-1.5 text-[11px] font-extrabold text-slate-800 line-clamp-1">
                   {badge.title}
                 </span>
