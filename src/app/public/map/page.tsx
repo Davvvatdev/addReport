@@ -6,7 +6,7 @@ import { AppHeader } from '@/components/ui';
 
 const prisma = new PrismaClient();
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const dynamic = 'force-dynamic';
 
 export default async function MapPage() {
   // Fetch reports with coordinates

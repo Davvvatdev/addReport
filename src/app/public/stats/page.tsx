@@ -6,7 +6,7 @@ import { AppHeader, StatCard, Surface } from '@/components/ui';
 import { toFa } from '@/lib/format';
 
 const prisma = new PrismaClient();
-export const revalidate = 60; // 1 min
+export const dynamic = 'force-dynamic';
 
 export default async function StatsPage() {
   // Aggregate stats

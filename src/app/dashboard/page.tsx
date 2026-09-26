@@ -8,6 +8,8 @@ import { DeleteReportButton } from '@/components/DeleteReportButton';
 
 const prisma = new PrismaClient();
 
+export const dynamic = 'force-dynamic';
+
 // Server action to update status
 async function updateStatus(id: string, newStatus: string) {
   'use server';
