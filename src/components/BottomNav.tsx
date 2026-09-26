@@ -22,7 +22,7 @@ export default function BottomNav() {
       {/* Spacer to prevent content from being hidden behind nav */}
       <div className="h-20 shrink-0"></div>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 pb-safe z-50 shadow-[0_-4px_25px_-5px_rgba(0,0,0,0.06)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/80 bg-white/95 pb-safe shadow-[0_-4px_25px_-5px_rgba(15,23,42,0.12)] backdrop-blur-md">
         <div className="flex justify-around items-center h-16 max-w-md mx-auto relative px-2">
           
           {/* خانه */}
@@ -51,7 +51,7 @@ export default function BottomNav() {
           <div className="flex-1 flex justify-center -mt-6">
             <Link
               href="/report"
-              className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-sky-500 text-white shadow-lg shadow-sky-500/35 active:scale-90 transition-all hover:scale-105"
+              className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition-all active:scale-90 hover:scale-105"
               aria-label="ثبت گزارش جدید"
             >
               <Plus size={28} strokeWidth={2.6} className="transition-transform group-hover:rotate-90 duration-300" />

@@ -18,9 +18,20 @@ import {
   type VehicleContext,
 } from '@/lib/types';
 import { awardPointsForReport, Badge } from '@/lib/gamification';
+import { Notice } from '@/components/ui';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  '1': Clock, '2': Cog, '3': Construction, '4': ShieldAlert, '5': Megaphone, '6': CreditCard, '7': Pencil,
+  '1': Cog, '2': Clock, '3': Construction, '4': ShieldAlert, '5': Megaphone, '6': CreditCard, '7': Pencil,
+};
+
+const CATEGORY_STYLES: Record<string, { bg: string; border: string; edge: string; iconBg: string; iconColor: string }> = {
+  '1': { bg: 'bg-amber-50/80', border: 'border-amber-200', edge: '[--edge:#fcd34d]', iconBg: 'bg-amber-100', iconColor: 'text-amber-700' },
+  '2': { bg: 'bg-blue-50/80', border: 'border-blue-200', edge: '[--edge:#93c5fd]', iconBg: 'bg-blue-100', iconColor: 'text-blue-700' },
+  '3': { bg: 'bg-emerald-50/80', border: 'border-emerald-200', edge: '[--edge:#6ee7b7]', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-700' },
+  '4': { bg: 'bg-rose-50/80', border: 'border-rose-200', edge: '[--edge:#fda4af]', iconBg: 'bg-rose-100', iconColor: 'text-rose-700' },
+  '5': { bg: 'bg-sky-50/80', border: 'border-sky-200', edge: '[--edge:#7dd3fc]', iconBg: 'bg-sky-100', iconColor: 'text-sky-700' },
+  '6': { bg: 'bg-teal-50/80', border: 'border-teal-200', edge: '[--edge:#5eead4]', iconBg: 'bg-teal-100', iconColor: 'text-teal-700' },
+  '7': { bg: 'bg-slate-50', border: 'border-slate-200', edge: '[--edge:#cbd5e1]', iconBg: 'bg-slate-200', iconColor: 'text-slate-700' },
 };
 const MODES: { id: Mode; label: string; icon: LucideIcon }[] = [
   { id: 'metro', label: 'مترو', icon: Train },
@@ -32,10 +43,10 @@ const CONTEXTS: { id: VehicleContext; label: string }[] = [
   { id: 'on_vehicle', label: 'داخل وسیله' },
   { id: 'transfer_point', label: 'نقطه تبادل' },
 ];
-const SEVERITIES: { id: Severity; label: string; cls: string }[] = [
-  { id: 'low', label: 'کم', cls: 'border-emerald-600 bg-emerald-50 text-emerald-800' },
-  { id: 'medium', label: 'متوسط', cls: 'border-amber-600 bg-amber-50 text-amber-800' },
-  { id: 'high', label: 'زیاد', cls: 'border-rose-600 bg-rose-50 text-rose-800' },
+const SEVERITIES: { id: Severity; label: string; activeCls: string; inactiveCls: string }[] = [
+  { id: 'low', label: 'کم', activeCls: 'border-emerald-500 bg-emerald-500 text-white font-black [--edge:#047857]', inactiveCls: 'border-emerald-200 bg-white text-emerald-800 font-bold [--edge:#6ee7b7]' },
+  { id: 'medium', label: 'متوسط', activeCls: 'border-amber-500 bg-amber-500 text-white font-black [--edge:#b45309]', inactiveCls: 'border-amber-200 bg-white text-amber-800 font-bold [--edge:#fcd34d]' },
+  { id: 'high', label: 'زیاد', activeCls: 'border-rose-500 bg-rose-500 text-white font-black [--edge:#be123c]', inactiveCls: 'border-rose-200 bg-white text-rose-800 font-bold [--edge:#fda4af]' },
 ];
 const GEO_MAX_KM = 1.5;
 
@@ -200,9 +211,11 @@ export default function ReportWizard() {
 
     // پاداش مشارکت شهروندی
     const hour = now.getHours();
+    const localReports = await db.reports.orderBy('createdAt').toArray();
     const rewardInfo = awardPointsForReport({
       hasPhoto: Boolean(canPhoto && photo),
       isNight: hour >= 20 || hour < 6,
+      reports: localReports,
     });
 
     setDone({
@@ -240,7 +253,7 @@ export default function ReportWizard() {
           <>
             <p className="font-medium text-slate-700">برای بار اول به اینترنت نیاز است.</p>
             <p className="text-sm">پس از یک‌بار بارگذاری، ثبت گزارش بدون اینترنت هم کار می‌کند.</p>
-            <button onClick={() => location.reload()} className="mt-2 min-h-12 rounded-xl bg-blue-600 px-6 font-bold text-white">
+            <button onClick={() => location.reload()} className="btn btn-primary pressable mt-2 min-h-12 px-6">
               تلاش دوباره
             </button>
           </>
@@ -262,22 +275,22 @@ export default function ReportWizard() {
         <div>
           <h1 className="text-2xl font-extrabold">ممنون، گزارش شما ثبت شد</h1>
           {!result && (
-            <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+            <Notice tone="warning" className="mt-2 text-right">
               ثبت شد — در انتظار ارسال. با اتصال به اینترنت خودکار ارسال می‌شود.
-            </p>
+            </Notice>
           )}
         </div>
-        <div className="rounded-lg border border-[var(--border)] bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs text-slate-500">کد رهگیری</p>
           <p dir="ltr" className="mt-1 text-2xl font-bold tracking-widest text-slate-900">{done.code}</p>
         </div>
 
         {/* پاداش سکه و خدمات شهری */}
-        <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 p-4 text-white shadow-lg shadow-sky-500/20 text-right">
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-4 text-right text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl backdrop-blur-sm">
-                🎉
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-amber-300">
+                <Trophy size={24} />
               </span>
               <div>
                 <p className="text-xs font-bold text-sky-100">پاداش مشارکت شهروندی</p>
@@ -301,7 +314,7 @@ export default function ReportWizard() {
             <span className="text-sky-100">قابل تبدیل به شارژ کارت بلیت مترو و سینما</span>
             <Link
               href="/profile"
-              className="inline-flex items-center gap-1 rounded-lg bg-white/20 px-2.5 py-1 font-black text-white hover:bg-white/30 transition-colors"
+              className="btn pressable shrink-0 gap-1 rounded-lg bg-white px-2.5 py-1 font-black text-blue-700 [--edge:#1e3a8a]"
             >
               <Gift size={13} />
               <span>جوایز و خدمات شهری</span>
@@ -309,45 +322,42 @@ export default function ReportWizard() {
           </div>
         </div>
         {result?.stationWeekCount != null && result.stationName && !done.sensitive && (
-          <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-medium text-blue-900">
+          <Notice tone="info" className="text-right text-sm font-medium">
             <p>
               این <b>{toFa(result.stationWeekCount)}</b>‌امین گزارش از ایستگاه «{result.stationName}» در ۷ روز گذشته است.
             </p>
             {done.stationId && (
-              <Link href={`/public/list?station=${done.stationId}`} className="block w-full rounded-lg bg-blue-600 py-2.5 text-center font-bold text-white shadow-sm active:bg-blue-700">
+            <Link href={`/public/list?station=${done.stationId}`} className="btn btn-primary pressable mt-3 w-full py-2.5">
                 مشاهده وضعیت این ایستگاه
               </Link>
             )}
-          </div>
+          </Notice>
         )}
         {done.sensitive && (
-          <div className="space-y-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-right">
-            <div className="flex items-center gap-2 font-bold text-rose-900">
-              <ShieldCheck size={20} /> شما تنها نیستید
-            </div>
-            <p className="text-sm leading-7 text-rose-900">
+          <Notice tone="danger" icon={ShieldCheck} title="شما تنها نیستید" className="text-right">
+            <p className="text-sm leading-7">
               گزارش شما کاملاً ناشناس ثبت شد. اگر همین حالا در خطر هستید یا به کمک نیاز دارید، تماس بگیرید:
             </p>
-            <ul className="space-y-2 text-sm">
+            <ul className="mt-3 space-y-2.5 text-sm">
               {[['۱۱۰', '110', 'پلیس'], ['۱۲۳', '123', 'اورژانس اجتماعی'], ['۱۱۵', '115', 'اورژانس']].map(([fa, n, t]) => (
                 <li key={n}>
-                  <a href={`tel:${n}`} className="flex min-h-12 items-center justify-between rounded-lg bg-white px-4 font-medium text-rose-900">
+                  <a href={`tel:${n}`} className="btn btn-danger pressable min-h-12 w-full justify-between px-4">
                     <span>{t}</span>
                     <span className="flex items-center gap-2 font-bold"><Phone size={16} />{fa}</span>
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </Notice>
         )}
         <div className="mt-2 flex flex-col gap-3">
           {done.stationId && result && !done.sensitive && (
-            <Link href={`/public/list?station=${done.stationId}`} className="flex min-h-14 items-center justify-center rounded-xl bg-slate-950 font-bold text-white">
+          <Link href={`/public/list?station=${done.stationId}`} className="btn btn-dark pressable min-h-14">
               مشاهده گزارش‌های این ایستگاه
             </Link>
           )}
-          <button onClick={reset} className="min-h-14 rounded-xl bg-blue-600 font-bold text-white">ثبت گزارش دیگر</button>
-          <Link href="/" className="flex min-h-12 items-center justify-center gap-2 text-slate-600"><Home size={18} /> صفحه اصلی</Link>
+          <button onClick={reset} className="btn btn-primary pressable min-h-14">ثبت گزارش دیگر</button>
+          <Link href="/" className="flex min-h-12 items-center justify-center gap-2 text-slate-600 underline underline-offset-4"><Home size={18} /> صفحه اصلی</Link>
         </div>
       </div>
     );
@@ -357,10 +367,10 @@ export default function ReportWizard() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="flex items-center gap-2 px-3 py-2">
           {step > 1 && !submitting ? (
-            <button onClick={back} aria-label="بازگشت" className="flex h-11 w-11 items-center justify-center rounded-xl active:bg-slate-100"><ArrowRight size={22} /></button>
+            <button onClick={back} aria-label="بازگشت" className="flex h-11 w-11 items-center justify-center rounded-2xl active:bg-slate-100"><ArrowRight size={22} /></button>
           ) : (
             <div className="w-11" /> /* Spacer to keep title centered if needed, or just nothing */
           )}
@@ -370,12 +380,12 @@ export default function ReportWizard() {
           <span className="pl-2 text-sm text-slate-500">مرحله {toFa(step)} از {toFa(3)}</span>
         </div>
         <div className="h-1 bg-slate-100"><div className="h-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} /></div>
-        <div className="flex items-center justify-between bg-sky-50 px-4 py-1.5 text-[11px] font-bold text-sky-800 border-b border-sky-100/80">
+        <div className="notice notice-info items-center justify-between rounded-none border-b border-blue-100 px-4 py-1.5 text-[11px] font-bold">
           <span className="flex items-center gap-1.5">
             <Sparkles size={13} className="text-amber-500 shrink-0" />
             ثبت این گزارش = ۵۰ سکه شهروندی (تبدیل به خدمات شهری)
           </span>
-          <Link href="/profile" className="text-sky-600 hover:underline shrink-0">
+          <Link href="/profile" className="shrink-0 font-black text-blue-700 underline underline-offset-4">
             مشاهده جوایز
           </Link>
         </div>
@@ -387,7 +397,7 @@ export default function ReportWizard() {
           {nearest && (
             <button
               onClick={confirmNearest}
-              className="flex min-h-16 items-center gap-3 rounded-xl bg-blue-600 px-4 py-3 text-right text-white shadow-lg shadow-blue-600/25 active:bg-blue-700"
+              className="btn btn-primary pressable min-h-16 justify-start gap-3 px-4 py-3 text-right font-normal"
             >
               <MapPin size={26} className="shrink-0" />
               <span className="flex-1">
@@ -405,9 +415,14 @@ export default function ReportWizard() {
                   key={id}
                   onClick={() => { setMode(id); setLineId(null); setStationId(null); setQuery(''); }}
                   aria-pressed={mode === id}
-                  className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border-2 text-sm font-bold shadow-sm ${mode === id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-[var(--border)] bg-white text-slate-700'}`}
+                  className={`pressable flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-2xl border text-xs font-black ${
+                    mode === id
+                      ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
                 >
-                  <Icon size={22} />{label}
+                  <Icon size={22} />
+                  <span>{label}</span>
                 </button>
               ))}
             </div>
@@ -420,9 +435,14 @@ export default function ReportWizard() {
                   key={l.id}
                   onClick={() => { setLineId(lineId === l.id ? null : l.id); setStationId(null); }}
                   aria-pressed={lineId === l.id}
-                  className={`flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-bold ${lineId === l.id ? 'border-slate-950 bg-slate-950 text-white' : 'border-[var(--border)] bg-white text-slate-700'}`}
+                  className={`pressable flex min-h-11 items-center gap-2 rounded-2xl border px-3.5 text-xs font-black ${
+                    lineId === l.id
+                      ? 'border-slate-900 bg-slate-900 text-white [--edge:#000]'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
                 >
-                  <span className="h-3 w-3 rounded-full" style={{ background: l.color ?? '#94a3b8' }} />{l.name}
+                  <span className="h-3 w-3 rounded-full shrink-0 shadow-sm" style={{ background: l.color ?? '#94a3b8' }} />
+                  <span>{l.name}</span>
                 </button>
               ))}
             </section>
@@ -436,10 +456,10 @@ export default function ReportWizard() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="جستجوی ایستگاه…"
-                  className="min-h-12 w-full rounded-xl border border-[var(--border)] bg-white pr-10 pl-3 text-base outline-none focus:border-blue-500"
+                  className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white pr-10 pl-3 text-base outline-none focus:border-blue-500"
                 />
               </label>
-              <ul className="max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-[var(--border)] bg-white shadow-sm">
+              <ul className="max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
                 {stationList.map((s) => (
                   <li key={s.id}>
                     <button
@@ -464,9 +484,9 @@ export default function ReportWizard() {
               </ul>
             </section>
           ) : (
-            <p className="rounded-lg border border-[var(--border)] bg-white p-3 text-sm text-slate-600">
+            <Notice tone="neutral" className="text-sm">
               فهرست ایستگاه‌های اتوبوس و بی‌آر‌تی هنوز اضافه نشده؛ می‌توانید رد شوید و مشکل را ثبت کنید.
-            </p>
+            </Notice>
           )}
 
           <section>
@@ -477,7 +497,7 @@ export default function ReportWizard() {
                   key={c.id}
                   onClick={() => setContext(c.id)}
                   aria-pressed={context === c.id}
-                  className={`min-h-12 rounded-xl border-2 text-sm font-bold ${context === c.id ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-[var(--border)] bg-white text-slate-700'}`}
+                  className={`pressable min-h-12 rounded-2xl border text-sm font-bold ${context === c.id ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]' : 'border-slate-200 bg-white text-slate-700'}`}
                 >
                   {c.label}
                 </button>
@@ -488,11 +508,11 @@ export default function ReportWizard() {
           <div className="mt-auto flex gap-3 pt-2">
             <button
               onClick={() => { setStationId(null); setLineId(null); setStep(2); }}
-              className="min-h-14 flex-1 rounded-xl border-2 border-[var(--border)] bg-white font-bold text-slate-600"
+              className="btn btn-neutral pressable min-h-14 flex-1"
             >
               نمی‌دانم / رد کردن
             </button>
-            <button onClick={() => setStep(2)} disabled={!stationId} className="min-h-14 flex-[1.4] rounded-xl bg-blue-600 font-bold text-white shadow-lg shadow-blue-600/20 disabled:opacity-40">
+            <button onClick={() => setStep(2)} disabled={!stationId} className="btn btn-primary pressable min-h-14 flex-[1.4]">
               ادامه
             </button>
           </div>
@@ -506,7 +526,7 @@ export default function ReportWizard() {
             <div className="grid grid-cols-2 gap-3">
               {meta.categories.map((c) => {
                 const Icon = CATEGORY_ICONS[c.id] ?? Pencil;
-                const sensitive = c.subcategories.some((s) => s.isSensitive);
+                const style = CATEGORY_STYLES[c.id] ?? { bg: 'bg-white', border: 'border-slate-200', edge: '[--edge:#cbd5e1]', iconBg: 'bg-blue-50', iconColor: 'text-blue-600' };
                 return (
                   <button
                     key={c.id}
@@ -515,10 +535,12 @@ export default function ReportWizard() {
                       // «سایر» فقط یک زیرمسئله دارد؛ مستقیم به جزئیات می‌رویم
                       if (c.subcategories.length === 1) { setSubcategoryId(c.subcategories[0].id); setStep(3); }
                     }}
-                    className={`flex min-h-32 flex-col items-center justify-center gap-3 rounded-xl border-2 p-3 text-center font-bold shadow-sm active:scale-[0.98] ${sensitive ? 'border-rose-200 bg-rose-50 text-rose-900' : 'border-[var(--border)] bg-white text-slate-800'}`}
+                    className={`pressable flex min-h-36 flex-col items-center justify-center gap-3 rounded-3xl border p-4 text-center font-black ${style.bg} ${style.border} ${style.edge}`}
                   >
-                    <Icon size={34} className={sensitive ? 'text-rose-600' : 'text-blue-600'} />
-                    <span className="text-sm leading-6">{clean(c.titleFa)}</span>
+                    <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm ${style.iconBg} ${style.iconColor}`}>
+                      <Icon size={28} strokeWidth={2.3} />
+                    </span>
+                    <span className="text-xs font-black text-slate-900 leading-5">{clean(c.titleFa)}</span>
                   </button>
                 );
               })}
@@ -529,7 +551,7 @@ export default function ReportWizard() {
                 <li key={s.id}>
                   <button
                     onClick={() => { setSubcategoryId(s.id); setStep(3); }}
-                    className="flex min-h-14 w-full items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-right font-bold shadow-sm active:bg-blue-50"
+                    className="pressable flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right font-bold"
                   >
                     <span className="flex-1 leading-6">{s.titleFa}</span>
                     {s.isSensitive && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs text-rose-700">ناشناس</span>}
@@ -545,7 +567,7 @@ export default function ReportWizard() {
       {/* ───────────── مرحله ۳: جزئیات ───────────── */}
       {step === 3 && subcategory && (
         <div className="flex flex-1 flex-col gap-5 p-4">
-          <div className="space-y-1 rounded-lg border border-[var(--border)] bg-white p-3 text-sm shadow-sm">
+          <div className="space-y-1 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
             <p className="font-bold text-slate-900">{subcategory.titleFa}</p>
             <p className="text-slate-600">
               {station ? station.name : 'ایستگاه نامشخص'}
@@ -554,10 +576,9 @@ export default function ReportWizard() {
           </div>
 
           {subcategory.isSensitive && (
-            <div className="flex gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm leading-7 text-rose-900">
-              <ShieldCheck size={20} className="mt-1 shrink-0" />
+            <Notice tone="danger" icon={ShieldCheck} className="text-sm">
               این گزارش کاملاً ناشناس است. عکس گرفته نمی‌شود و در نمای عمومی فقط به‌صورت آمار تجمیعی دیده می‌شود.
-            </div>
+            </Notice>
           )}
 
           {canPhoto && (
@@ -571,7 +592,7 @@ export default function ReportWizard() {
                 onChange={(e) => { void onPhoto(e.target.files?.[0]); e.target.value = ''; }}
               />
               {photo ? (
-                <div className="relative overflow-hidden rounded-lg border border-[var(--border)]">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={photo} alt="عکس پیوست" className="max-h-56 w-full object-cover" />
                   <button onClick={() => setPhoto(null)} aria-label="حذف عکس" className="absolute left-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white">
@@ -582,7 +603,7 @@ export default function ReportWizard() {
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={photoBusy}
-                  className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white font-bold text-slate-700"
+                  className="pressable flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white font-bold text-slate-700"
                 >
                   {photoBusy ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
                   افزودن عکس <span className="text-xs text-slate-400">(اختیاری — لطفاً از افراد عکس نگیرید)</span>
@@ -592,14 +613,14 @@ export default function ReportWizard() {
           )}
 
           <section>
-            <p className="mb-2 text-sm font-medium text-slate-600">شدت مشکل</p>
-            <div className="grid grid-cols-3 gap-2">
+            <p className="mb-2 text-xs font-bold text-slate-700">شدت مسئله را مشخص کنید:</p>
+            <div className="grid grid-cols-3 gap-2.5">
               {SEVERITIES.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => setSeverity(s.id)}
                   aria-pressed={severity === s.id}
-                  className={`min-h-14 rounded-xl border-2 font-bold ${severity === s.id ? s.cls : 'border-[var(--border)] bg-white text-slate-600'}`}
+                  className={`pressable min-h-14 rounded-2xl border text-sm ${severity === s.id ? s.activeCls : s.inactiveCls}`}
                 >
                   {s.label}
                 </button>
@@ -610,7 +631,7 @@ export default function ReportWizard() {
           {isOther ? (
             <DescriptionField value={description} onChange={setDescription} label="توضیح دهید" />
           ) : (
-            <details className="rounded-lg border border-[var(--border)] bg-white">
+            <details className="rounded-2xl border border-slate-200 bg-white">
               <summary className="min-h-12 cursor-pointer list-none px-4 py-3 text-sm font-medium text-slate-600">افزودن توضیح (اختیاری)</summary>
               <div className="px-3 pb-3"><DescriptionField value={description} onChange={setDescription} /></div>
             </details>
@@ -619,15 +640,15 @@ export default function ReportWizard() {
           {!consented && (
             <p className="text-xs leading-6 text-slate-500">
               با ثبت گزارش، می‌پذیرید که گزارش شما بدون هیچ اطلاعات هویتی به‌صورت عمومی منتشر شود.{' '}
-              <Link href="/privacy" className="text-blue-600 underline">حریم خصوصی</Link>
+              <Link href="/privacy" className="font-bold text-blue-700 underline underline-offset-4">حریم خصوصی</Link>
             </p>
           )}
-          {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+          {error && <Notice tone="danger" role="alert" className="text-sm">{error}</Notice>}
 
           <button
             onClick={submit}
             disabled={submitting || photoBusy || (isOther && !description.trim())}
-            className="mt-auto flex min-h-16 items-center justify-center gap-2 rounded-xl bg-blue-600 text-xl font-extrabold text-white shadow-lg shadow-blue-600/30 active:bg-blue-700 disabled:opacity-50"
+            className="btn btn-primary pressable mt-auto min-h-16 gap-2 text-xl font-extrabold"
           >
             {submitting ? <Loader2 className="animate-spin" /> : 'ثبت'}
           </button>
@@ -645,7 +666,7 @@ function DescriptionField({ value, onChange, label }: { value: string; onChange:
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, MAX_DESCRIPTION))}
         rows={3}
-        className="w-full rounded-xl border border-[var(--border)] bg-white p-3 text-base outline-none focus:border-blue-500"
+        className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-base outline-none focus:border-blue-500"
       />
       <span className="mt-1 block text-left text-xs text-slate-400">{toFa(value.length)} / {toFa(MAX_DESCRIPTION)}</span>
     </label>

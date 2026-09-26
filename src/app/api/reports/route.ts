@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { trackingCode } from '@/lib/format';
+import { getSession } from '@/lib/session';
 import { MAX_DESCRIPTION, type SubmitResult } from '@/lib/types';
 
 const MODES = ['metro', 'bus', 'brt'];
@@ -72,6 +73,8 @@ export async function POST(request: Request) {
   const lat = subcategory.isSensitive ? null : num(body.lat);
   const lng = subcategory.isSensitive ? null : num(body.lng);
 
+  const session = await getSession();
+
   await prisma.report.create({
     data: {
       id,
@@ -88,6 +91,7 @@ export async function POST(request: Request) {
       occurredAt,
       isAnonymous: true,
       reporterToken,
+      userId: session?.userId,
     },
   });
 

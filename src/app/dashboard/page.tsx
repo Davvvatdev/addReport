@@ -63,7 +63,7 @@ export default async function DashboardPage() {
               <h2 className="font-extrabold text-slate-950">صف عملیاتی گزارش‌ها</h2>
               <p className="mt-1 text-sm text-slate-500">وضعیت گزارش قابل تغییر است و در صورت نیاز (مثلاً گزارش‌های جا مانده) می‌توان آن را حذف کرد.</p>
             </div>
-            <Link href="/public/list" className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white">نمای عمومی</Link>
+            <Link href="/public/list" className="btn btn-dark pressable px-4 py-2 text-sm">نمای عمومی</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-right text-slate-600">
@@ -116,7 +116,7 @@ export default async function DashboardPage() {
                             'use server';
                             await updateStatus(report.id, report.status === 'submitted' ? 'acknowledged' : 'resolved');
                           }}>
-                            <button type="submit" className="flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-100">
+                            <button type="submit" className="btn btn-secondary pressable gap-1 whitespace-nowrap rounded-xl px-3 py-1.5 text-xs">
                               <CheckCircle size={14} />
                               {report.status === 'submitted' ? 'تأیید و بررسی' : 'ثبت رفع مشکل'}
                             </button>

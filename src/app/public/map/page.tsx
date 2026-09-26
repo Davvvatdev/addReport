@@ -27,15 +27,22 @@ export default async function MapPage() {
   });
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50">
+    <div className="flex h-[100dvh] flex-col bg-slate-50 overflow-hidden">
       <AppHeader
         title="نقشه توزیع گزارش‌ها"
         eyebrow={`${reports.length.toLocaleString('fa-IR')} نقطه غیرحساس`}
         icon={MapIcon}
-        action={<Link href="/public/list" className="flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-extrabold text-blue-700"><FileText size={15} /> فهرست</Link>}
+        action={
+          <Link
+            href="/public/list"
+            className="btn btn-secondary pressable gap-1 rounded-xl px-3 py-2 text-xs font-black"
+          >
+            <FileText size={15} /> فهرست
+          </Link>
+        }
       />
 
-      <main className="relative z-0 flex-1 p-3">
+      <main className="relative z-0 flex-1 p-3 pb-20 overflow-hidden">
         <MapWrapper reports={reports} />
       </main>
     </div>

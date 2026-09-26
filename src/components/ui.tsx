@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ComponentType, ReactNode } from 'react';
-import { ArrowRight, type LucideProps } from 'lucide-react';
+import { ArrowRight, CircleCheck, Info, ShieldAlert, TriangleAlert, type LucideProps } from 'lucide-react';
 
 type Icon = ComponentType<LucideProps>;
 
@@ -20,17 +20,17 @@ export function AppHeader({
   dark?: boolean;
 }) {
   return (
-    <header className={`sticky top-0 z-20 border-b px-4 py-3 backdrop-blur ${dark ? 'border-slate-800 bg-slate-950/95 text-white' : 'border-[var(--border)] bg-white/92 text-slate-950'}`}>
+    <header className={`sticky top-0 z-20 border-b px-4 py-3 backdrop-blur ${dark ? 'border-slate-800 bg-slate-950/95 text-white' : 'border-slate-200 bg-white/90 text-slate-950'}`}>
       <div className="mx-auto flex w-full max-w-6xl items-center gap-3">
         <Link
           href={backHref}
           aria-label="بازگشت"
-          className={`tap flex w-11 shrink-0 items-center justify-center rounded-xl ${dark ? 'text-slate-200 active:bg-white/10' : 'text-slate-600 active:bg-slate-100'}`}
+          className={`tap flex w-11 shrink-0 items-center justify-center rounded-2xl transition ${dark ? 'text-slate-200 active:bg-white/10' : 'text-slate-600 active:bg-slate-100'}`}
         >
           <ArrowRight size={21} />
         </Link>
         {Icon && (
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${dark ? 'bg-blue-500/15 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
+          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${dark ? 'bg-blue-500/15 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
             <Icon size={20} />
           </span>
         )}
@@ -53,7 +53,48 @@ export function Surface({
   className?: string;
   as?: 'section' | 'div' | 'article' | 'li';
 }) {
-  return <Tag className={`rounded-lg border border-[var(--border)] bg-white shadow-sm shadow-slate-200/40 ${className}`}>{children}</Tag>;
+  return <Tag className={`rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/40 ${className}`}>{children}</Tag>;
+}
+
+type NoticeTone = 'info' | 'warning' | 'danger' | 'success' | 'neutral';
+
+const NOTICE_ICONS: Record<NoticeTone, Icon> = {
+  info: Info,
+  warning: TriangleAlert,
+  danger: ShieldAlert,
+  success: CircleCheck,
+  neutral: Info,
+};
+
+/** بنر اطلاع‌رسانی: تخت و بدون سایه، با نوار رنگی ابتدای سطر تا با دکمه (برجسته) اشتباه نشود. */
+export function Notice({
+  tone = 'info',
+  icon,
+  title,
+  children,
+  action,
+  role,
+  className = '',
+}: {
+  tone?: NoticeTone;
+  icon?: Icon;
+  title?: ReactNode;
+  children?: ReactNode;
+  action?: ReactNode;
+  role?: 'status' | 'alert';
+  className?: string;
+}) {
+  const NoticeIcon = icon ?? NOTICE_ICONS[tone];
+  return (
+    <div role={role} className={`notice ${tone === 'neutral' ? '' : `notice-${tone}`} ${className}`}>
+      <NoticeIcon size={18} aria-hidden className="mt-1 shrink-0 text-[color:var(--notice-accent)]" />
+      <div className="min-w-0 flex-1">
+        {title && <p className="font-extrabold">{title}</p>}
+        {children && <div className={title ? 'mt-0.5' : ''}>{children}</div>}
+      </div>
+      {action}
+    </div>
+  );
 }
 
 export function StatCard({
@@ -75,13 +116,13 @@ export function StatCard({
     slate: 'bg-slate-100 text-slate-700',
   };
   return (
-    <Surface className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-slate-500">{label}</p>
+    <Surface className="min-h-[96px] p-4">
+      <div className="flex h-full items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold leading-5 text-slate-500">{label}</p>
           <div className="mt-1 text-2xl font-black text-slate-950">{value}</div>
         </div>
-        {Icon && <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${tones[tone]}`}><Icon size={20} /></span>}
+        {Icon && <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tones[tone]}`}><Icon size={19} /></span>}
       </div>
     </Surface>
   );

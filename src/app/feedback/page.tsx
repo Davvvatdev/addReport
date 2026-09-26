@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { CheckCircle, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
-import { AppHeader, Surface } from '@/components/ui';
+import { AppHeader, Notice, Surface } from '@/components/ui';
 import { toFa } from '@/lib/format';
 
 const SUS_QUESTIONS = [
@@ -80,7 +80,7 @@ export default function FeedbackPage() {
         </div>
         <h1 className="mb-2 text-2xl font-black text-slate-950">از بازخورد شما سپاسگزاریم</h1>
         <p className="mb-8 text-slate-600">نمره SUS شما: <span className="font-black text-blue-700">{toFa(calculateSUS())}</span> از {toFa(100)}</p>
-        <Link href="/" className="w-full max-w-sm rounded-xl bg-blue-600 px-6 py-3 font-bold text-white">
+        <Link href="/" className="btn btn-primary pressable w-full max-w-sm px-6 py-3">
           بازگشت به صفحه اصلی
         </Link>
       </div>
@@ -92,11 +92,9 @@ export default function FeedbackPage() {
       <AppHeader title="ارزیابی سامانه (SUS)" eyebrow={`${toFa(scores.filter(Boolean).length)} از ${toFa(10)} پاسخ`} icon={HelpCircle} />
 
       <main className="p-4 max-w-lg mx-auto w-full pb-24">
-        <Surface className="mb-5 p-4">
-          <p className="text-sm leading-7 text-slate-600">
+        <Notice tone="info" className="mb-5 text-sm">
           لطفاً برای هر یک از جملات زیر، میزان موافقت یا مخالفت خود را مشخص کنید. این بازخورد در ارزیابی نهایی پژوهش بسیار کمک‌کننده است.
-          </p>
-        </Surface>
+        </Notice>
 
         <div className="space-y-4">
           {SUS_QUESTIONS.map((question, qIndex) => (
@@ -117,8 +115,8 @@ export default function FeedbackPage() {
                     }}
                     className={`min-h-11 flex-1 rounded-lg border font-extrabold transition-colors ${
                       scores[qIndex] === val 
-                        ? 'bg-blue-600 border-blue-600 text-white' 
-                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        ? 'border-blue-600 bg-blue-600 text-white' 
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
                     {toFa(val)}
@@ -133,18 +131,18 @@ export default function FeedbackPage() {
             <textarea 
               value={freeComment}
               onChange={e => setFreeComment(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-[100px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="اگر نکته‌ای درباره طراحی یا کارکرد سامانه دارید..."
             ></textarea>
           </Surface>
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-200">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white p-4">
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="mx-auto block w-full max-w-lg rounded-xl bg-blue-600 py-4 text-lg font-extrabold text-white transition-colors active:bg-blue-700 disabled:bg-blue-400"
+          className="btn btn-primary pressable mx-auto flex w-full max-w-lg py-4 text-lg font-extrabold"
         >
           {isSubmitting ? 'در حال ارسال...' : 'ثبت بازخورد'}
         </button>

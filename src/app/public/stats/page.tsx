@@ -45,7 +45,7 @@ export default async function StatsPage() {
     <div className="app-bg flex min-h-screen flex-col">
       <AppHeader title="آمار و داده‌های باز" eyebrow="قابل استناد برای مطالبه‌گری" icon={BarChart3} backHref="/public/list" />
 
-      <main className="mx-auto w-full max-w-5xl space-y-5 p-4">
+      <main className="mx-auto w-full max-w-5xl space-y-5 p-4 pb-24">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard label="کل گزارش‌ها" value={toFa(totalReports)} icon={BarChart3} />
           <StatCard label="امروز" value={toFa(todayReports)} icon={Clock3} tone="teal" />
@@ -64,39 +64,51 @@ export default async function StatsPage() {
         <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
           <Surface className="p-4">
             <h2 className="mb-3 font-extrabold text-slate-950">ایستگاه‌های پرتکرار</h2>
-            <ol className="space-y-2">
-              {topStations.map((s, index) => (
-                <li key={s.stationId ?? 'none'} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                  <span className="font-bold text-slate-800">{toFa(index + 1)}. {s.stationId ? stationNames.get(s.stationId) : 'نامشخص'}</span>
-                  <span className="rounded-full bg-white px-2 py-1 text-xs font-extrabold text-slate-600">{toFa(s._count._all)}</span>
-                </li>
-              ))}
-            </ol>
+            {topStations.length === 0 ? (
+              <p className="text-xs text-slate-500 py-4 text-center">هنوز گزارشی برای ایستگاه‌ها ثبت نشده است.</p>
+            ) : (
+              <ol className="space-y-2">
+                {topStations.map((s, index) => {
+                  const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${toFa(index + 1)}.`;
+                  return (
+                    <li key={s.stationId ?? 'none'} className="flex items-center justify-between rounded-xl bg-slate-50/80 px-3 py-2.5 border border-slate-100">
+                      <span className="font-extrabold text-slate-800 text-xs flex items-center gap-2">
+                        <span className="text-sm">{medal}</span>
+                        <span>{s.stationId ? stationNames.get(s.stationId) : 'نامشخص'}</span>
+                      </span>
+                      <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-black text-slate-700 shadow-xs border border-slate-200/50">
+                        {toFa(s._count._all)} گزارش
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
           </Surface>
 
           <Surface className="p-4">
             <h2 className="font-extrabold text-slate-950">دریافت داده‌های خام</h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
-              گزارش‌ها بدون اطلاعات هویتی منتشر می‌شوند. مختصات دقیق موارد حساس در خروجی عمومی حذف شده است.
+            <p className="mt-2 text-xs leading-6 text-slate-600">
+              گزارش‌ها بدون اطلاعات هویتی و کاملاً ناشناس منتشر می‌شوند. مختصات دقیق موارد حساس در خروجی عمومی جهت حفظ امنیت مسافران حذف شده است.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Link 
-              href="/api/export?format=csv"
-              className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 font-bold text-white active:bg-slate-800"
-            >
-              <Table size={18} />
-              دانلود CSV
-            </Link>
-            <Link 
-              href="/api/export?format=json"
-              className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3 font-bold text-slate-800 active:bg-slate-50"
-            >
-              <FileJson size={18} />
-              دانلود JSON
-            </Link>
+              <Link 
+                href="/api/export?format=csv"
+                className="btn btn-dark pressable min-h-12 gap-2 px-4 py-3 text-xs font-black"
+              >
+                <Table size={16} />
+                دریافت خروجی CSV
+              </Link>
+              <Link 
+                href="/api/export?format=json"
+                className="btn btn-neutral pressable min-h-12 gap-2 px-4 py-3 text-xs font-black"
+              >
+                <FileJson size={16} />
+                دریافت خروجی JSON
+              </Link>
             </div>
           </Surface>
-          </div>
+        </div>
       </main>
     </div>
   );

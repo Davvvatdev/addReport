@@ -13,6 +13,8 @@ import {
   HelpCircle,
   History,
   Lock,
+  LogIn,
+  LogOut,
   MessageSquare,
   FilePenLine,
   Flag,
@@ -27,11 +29,12 @@ import {
   Trophy,
   X,
   CheckCircle2,
-  AlertCircle,
   Copy,
   Check,
   Zap,
 } from 'lucide-react';
+import { logout } from '@/app/actions/auth';
+import { Notice } from '@/components/ui';
 import {
   Badge,
   CitizenProfile,
@@ -56,19 +59,34 @@ export default function ProfilePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [customName, setCustomName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('👋');
+  const [account, setAccount] = useState<{ username: string } | null | undefined>(undefined);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => setAccount(data.user))
+      .catch(() => setAccount(null));
+  }, []);
 
   useEffect(() => {
     queueMicrotask(() => {
-      const p = getCitizenProfile();
-      setProfile(p);
-      setCustomName(p.name);
-      setSelectedAvatar(p.avatar);
+      db.reports
+        .toArray()
+        .then((items) => {
+          const sortedItems = [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          const p = getCitizenProfile(sortedItems);
+          setMyReports(sortedItems);
+          setProfile(p);
+          setCustomName(p.name);
+          setSelectedAvatar(p.avatar);
+        })
+        .catch(() => {
+          const p = getCitizenProfile();
+          setProfile(p);
+          setCustomName(p.name);
+          setSelectedAvatar(p.avatar);
+        });
     });
-
-    // بارگذاری گزارش‌های محلی ذخیره شده کاربر
-    db.reports.toArray().then((items) => {
-      setMyReports(items);
-    }).catch(() => {});
   }, []);
 
   if (!profile) {
@@ -80,7 +98,7 @@ export default function ProfilePage() {
   }
 
   function handleRedeem(reward: CityReward) {
-    const res = redeemCityService(reward.id);
+    const res = redeemCityService(reward.id, profile ?? undefined);
     if (res.success && res.updatedProfile) {
       setProfile(res.updatedProfile);
       setRedeemSuccess(`کد تخفیف «${reward.title}» با موفقیت صادر شد!`);
@@ -105,7 +123,7 @@ export default function ProfilePage() {
       avatar: selectedAvatar,
     };
     saveCitizenProfile(updated);
-    setProfile(updated);
+    setProfile(getCitizenProfile(myReports));
     setShowSettings(false);
   }
 
@@ -129,13 +147,34 @@ export default function ProfilePage() {
             <p className="text-xs font-bold text-slate-500">باشگاه شهروندی دیده‌بان</p>
             <h1 className="mt-0.5 text-2xl font-black tracking-normal text-slate-950">پروفایل شهروندی</h1>
           </div>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="tap flex w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition active:scale-95 active:bg-slate-50"
-            aria-label="تنظیمات پروفایل"
-          >
-            <Settings size={21} />
-          </button>
+          <div className="flex items-center gap-2">
+            {account === null && (
+              <Link
+                href="/login"
+                className="tap btn btn-secondary pressable px-3 py-2.5 text-xs"
+              >
+                <LogIn size={16} />
+                ورود
+              </Link>
+            )}
+            {account && (
+              <button
+                onClick={() => logout()}
+                className="tap btn btn-neutral pressable px-3 py-2.5 text-xs"
+                title={`خروج از حساب ${account.username}`}
+              >
+                <LogOut size={16} />
+                خروج ({account.username})
+              </button>
+            )}
+            <button
+              onClick={() => setShowSettings(true)}
+              className="tap btn btn-neutral pressable w-11 shrink-0"
+              aria-label="تنظیمات پروفایل"
+            >
+              <Settings size={21} />
+            </button>
+          </div>
         </header>
 
         <section className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40">
@@ -159,7 +198,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-blue-500 p-5 text-white shadow-lg shadow-blue-500/20">
+        <section className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-bold text-blue-100">سکه و امتیاز شهروندی (CityPulse)</p>
@@ -202,7 +241,7 @@ export default function ProfilePage() {
               <CircleCheck size={20} />
             </div>
             <span className="mt-1 text-xl font-black text-slate-950">{toFa(profile.resolvedCount)}</span>
-            <span className="text-[11px] font-medium text-slate-500">رسیدگی‌شده</span>
+            <span className="text-[11px] font-medium text-slate-500">ارسال‌شده</span>
           </div>
 
           <div className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-2 py-3 text-center shadow-sm">
@@ -210,7 +249,7 @@ export default function ProfilePage() {
               <ThumbsUp size={20} />
             </div>
             <span className="mt-1 text-xl font-black text-slate-950">{toFa(profile.upvotesCount)}</span>
-            <span className="text-[11px] font-medium text-slate-500">اثرگذاری</span>
+            <span className="text-[11px] font-medium text-slate-500">تأییدها</span>
           </div>
         </section>
 
@@ -260,27 +299,33 @@ export default function ProfilePage() {
 
         {/* پیام موفقیت / خطا در تبدیل پاداش */}
         {redeemSuccess && (
-          <div className="flex items-center justify-between rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-900 text-sm font-bold animate-fadeIn">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
-              <span>{redeemSuccess}</span>
-            </div>
-            <button onClick={() => setRedeemSuccess(null)} className="text-emerald-700 p-1">
-              <X size={16} />
-            </button>
-          </div>
+          <Notice
+            tone="success"
+            role="status"
+            className="animate-fadeIn text-sm font-bold"
+            action={
+              <button onClick={() => setRedeemSuccess(null)} aria-label="بستن پیام" className="btn btn-neutral pressable h-8 w-8 shrink-0 rounded-lg">
+                <X size={16} />
+              </button>
+            }
+          >
+            {redeemSuccess}
+          </Notice>
         )}
 
         {redeemError && (
-          <div className="flex items-center justify-between rounded-2xl bg-rose-50 border border-rose-200 p-4 text-rose-900 text-sm font-bold">
-            <div className="flex items-center gap-2">
-              <AlertCircle size={20} className="text-rose-600 shrink-0" />
-              <span>{redeemError}</span>
-            </div>
-            <button onClick={() => setRedeemError(null)} className="text-rose-700 p-1">
-              <X size={16} />
-            </button>
-          </div>
+          <Notice
+            tone="danger"
+            role="alert"
+            className="text-sm font-bold"
+            action={
+              <button onClick={() => setRedeemError(null)} aria-label="بستن پیام" className="btn btn-neutral pressable h-8 w-8 shrink-0 rounded-lg">
+                <X size={16} />
+              </button>
+            }
+          >
+            {redeemError}
+          </Notice>
         )}
 
         {/* تب‌های عملیاتی: جوایز شهری، گزارش‌های من، راهنما */}
@@ -349,7 +394,7 @@ export default function ProfilePage() {
                         </span>
                         <button
                           onClick={() => handleCopy(v.code)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-700 active:scale-95"
+                          className="btn btn-secondary pressable h-8 w-8 rounded-lg"
                           title="کپی کد"
                         >
                           {copiedCode === v.code ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
@@ -373,7 +418,7 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={reward.id}
-                    className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm border border-slate-100 transition-all hover:border-sky-200"
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4"
                   >
                     <div className="flex items-start gap-3">
                       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-2xl border border-slate-100">
@@ -399,10 +444,8 @@ export default function ProfilePage() {
                       </span>
                       <button
                         onClick={() => setSelectedReward(reward)}
-                        className={`rounded-xl px-4 py-2 text-xs font-black transition-all active:scale-95 ${
-                          canAfford
-                            ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 hover:bg-sky-600'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        className={`btn pressable rounded-xl px-4 py-2 text-xs font-black ${
+                          canAfford ? 'btn-primary' : 'btn-neutral text-slate-400'
                         }`}
                       >
                         {canAfford ? 'دریافت خدمت' : `${toFa(reward.pointsCost - profile.points)} سکه تا دریافت`}
@@ -420,7 +463,7 @@ export default function ProfilePage() {
           <section className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h3 className="font-black text-slate-900 text-sm">گزارش‌های ثبت‌شده با این دستگاه</h3>
-              <Link href="/report" className="text-xs font-bold text-sky-600">
+              <Link href="/report" className="btn btn-secondary pressable rounded-xl px-3 py-1.5 text-xs">
                 + ثبت گزارش جدید
               </Link>
             </div>
@@ -430,11 +473,11 @@ export default function ProfilePage() {
                 <span className="text-4xl mb-2">📋</span>
                 <p className="font-bold text-slate-800">هنوز گزارشی ثبت نکرده‌اید</p>
                 <p className="text-xs text-slate-500 mt-1 max-w-xs leading-5">
-                  با ثبت اولین گزارش از مترو یا اتوبوس، ۵۰ سکه شهروندی دریافت کرده و نشان «اولین گزارش» را باز کنید!
+                  آمار و سکه‌های پروفایل فقط بعد از ثبت گزارش واقعی روی همین دستگاه ساخته می‌شود.
                 </p>
                 <Link
                   href="/report"
-                  className="mt-4 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/20 active:scale-95"
+                  className="btn btn-primary pressable mt-4 rounded-xl px-5 py-2.5 text-xs font-black"
                 >
                   شروع ثبت گزارش (+۵۰ سکه)
                 </Link>
@@ -444,7 +487,7 @@ export default function ProfilePage() {
                 {myReports.map((r, i) => (
                   <div
                     key={r.uuid || i}
-                    className="flex items-center justify-between rounded-2xl bg-white p-3.5 shadow-sm border border-slate-100"
+                    className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3.5"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -463,7 +506,7 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200/60">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        +۵۰ سکه
+                        +{toFa(50 + (r.photoData ? 25 : 0))} سکه
                       </span>
                       <span className="text-[10px] font-medium text-slate-400">
                         {r.syncStatus === 'synced' ? 'ارسال‌شده به سامانه' : 'در صف ارسال'}
@@ -479,7 +522,7 @@ export default function ProfilePage() {
         {/* محتوای تب ۳: راهنما و قوانین باشگاه شهروندی */}
         {activeTab === 'faq' && (
           <section className="space-y-3">
-            <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-100 space-y-3">
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
               <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
                 <Sparkles size={16} className="text-amber-500" />
                 چگونه سکه شهروندی به دست آوریم؟
@@ -488,11 +531,11 @@ export default function ProfilePage() {
                 <li><strong className="text-slate-800">هر گزارش معمولی:</strong> ۵۰ سکه شهروندی</li>
                 <li><strong className="text-slate-800">ضمیمه کردن عکس واقعی:</strong> ۲۵ سکه پاداش اضافه</li>
                 <li><strong className="text-slate-800">گزارش در ساعات شلوغی:</strong> ۱۰ سکه پاداش اضافه</li>
-                <li><strong className="text-slate-800">تأیید گزارش توسط دیگران:</strong> ۵ سکه به ازای هر تأیید</li>
+                <li><strong className="text-slate-800">ارسال موفق گزارش:</strong> در بخش آمار با وضعیت ارسال‌شده دیده می‌شود.</li>
               </ul>
             </div>
 
-            <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-100 space-y-2">
+            <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
               <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
                 <Gift size={16} className="text-sky-500" />
                 چگونه سکه‌ها را به خدمات شهری تبدیل کنیم؟
@@ -502,7 +545,7 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-100 space-y-2">
+            <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
               <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
                 <Shield size={16} className="text-teal-600" />
                 آیا هویت من فاش می‌شود؟
@@ -518,7 +561,7 @@ export default function ProfilePage() {
         <section className="space-y-2">
           <Link
             href="/privacy"
-            className="flex items-center justify-between rounded-2xl bg-white p-3.5 shadow-sm border border-slate-100 active:bg-slate-50"
+            className="pressable flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-slate-300"
           >
             <div className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -529,12 +572,12 @@ export default function ProfilePage() {
                 <p className="text-[11px] text-slate-500">مدیریت اطلاعات و تعهدات ناشناسی</p>
               </div>
             </div>
-            <ChevronLeft size={18} className="text-slate-400" />
+            <ChevronLeft size={18} className="text-slate-500" />
           </Link>
 
           <Link
             href="/feedback"
-            className="flex items-center justify-between rounded-2xl bg-white p-3.5 shadow-sm border border-slate-100 active:bg-slate-50"
+            className="pressable flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-slate-300"
           >
             <div className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
@@ -545,7 +588,7 @@ export default function ProfilePage() {
                 <p className="text-[11px] text-slate-500">کمک به پژوهش علمی و بهبود تجربه مسافران</p>
               </div>
             </div>
-            <ChevronLeft size={18} className="text-slate-400" />
+            <ChevronLeft size={18} className="text-slate-500" />
           </Link>
         </section>
 
@@ -575,7 +618,7 @@ export default function ProfilePage() {
 
             <button
               onClick={() => setSelectedBadge(null)}
-              className="mt-5 w-full rounded-2xl bg-slate-900 py-3 text-xs font-black text-white active:bg-slate-800"
+              className="btn btn-dark pressable mt-5 w-full py-3 text-xs font-black"
             >
               بستن
             </button>
@@ -606,13 +649,13 @@ export default function ProfilePage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setSelectedReward(null)}
-                className="flex-1 rounded-2xl bg-slate-100 py-3 text-xs font-black text-slate-700 active:bg-slate-200"
+                className="btn btn-neutral pressable flex-1 py-3 text-xs font-black"
               >
                 انصراف
               </button>
               <button
                 onClick={() => handleRedeem(selectedReward)}
-                className="flex-1 rounded-2xl bg-sky-500 py-3 text-xs font-black text-white shadow-lg shadow-sky-500/25 active:bg-sky-600"
+                className="btn btn-primary pressable flex-1 py-3 text-xs font-black"
               >
                 تأیید و دریافت کد
               </button>
@@ -627,7 +670,7 @@ export default function ProfilePage() {
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-100 animate-scaleUp">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-black text-slate-900">تنظیمات پروفایل دیده‌بان</h3>
-              <button onClick={() => setShowSettings(false)} className="text-slate-400 p-1">
+              <button onClick={() => setShowSettings(false)} aria-label="بستن" className="btn btn-neutral pressable h-8 w-8 rounded-lg">
                 <X size={18} />
               </button>
             </div>
@@ -666,13 +709,13 @@ export default function ProfilePage() {
               <div className="pt-2 flex gap-2">
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="flex-1 rounded-2xl bg-slate-100 py-3 text-xs font-bold text-slate-700"
+                  className="btn btn-neutral pressable flex-1 py-3 text-xs"
                 >
                   انصراف
                 </button>
                 <button
                   onClick={handleSaveProfile}
-                  className="flex-1 rounded-2xl bg-sky-500 py-3 text-xs font-black text-white shadow-md shadow-sky-500/20"
+                  className="btn btn-primary pressable flex-1 py-3 text-xs font-black"
                 >
                   ذخیره تغییرات
                 </button>

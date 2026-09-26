@@ -14,6 +14,10 @@ export const metadata: Metadata = {
   title: "دیده‌بان حمل‌ونقل تهران",
   description: "سامانه ثبت تجربه مسافران حمل‌ونقل عمومی تهران",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/assets/logo.png",
+    apple: "/assets/logo.png",
+  },
 };
 
 export const viewport: Viewport = { themeColor: "#2563eb" };

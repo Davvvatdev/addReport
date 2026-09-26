@@ -28,9 +28,9 @@ export default function SyncManager() {
   return (
     <div
       role="status"
-      className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 shadow-xl shadow-amber-900/10"
+      className="notice notice-warning fixed inset-x-3 bottom-3 z-50 mx-auto max-w-md items-center text-sm font-bold"
     >
-      <CloudOff size={18} />
+      <CloudOff size={18} className="shrink-0" aria-hidden />
       {toFa(pending)} گزارش در انتظار ارسال است؛ با اتصال به اینترنت خودکار ارسال می‌شود.
     </div>
   );

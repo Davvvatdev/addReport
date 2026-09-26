@@ -24,7 +24,7 @@ export default function PrivacyPage() {
             <p className="text-sm leading-7 text-slate-600">{d}</p>
           </Surface>
         ))}
-        <Link href="/" className="flex min-h-12 items-center justify-center rounded-xl bg-slate-950 font-bold text-white">بازگشت</Link>
+        <Link href="/" className="btn btn-dark pressable min-h-12 w-full">بازگشت</Link>
       </div>
     </main>
   );

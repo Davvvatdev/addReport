@@ -54,6 +54,17 @@ export interface CitizenProfile {
 }
 
 const STORAGE_KEY = 'tehran_citizen_profile_v1';
+const SAMPLE_VOUCHER_CODE = 'METRO-7824-TH';
+
+export interface ProfileReportInput {
+  mode?: string;
+  lineId?: string | null;
+  categoryId?: string | null;
+  subcategoryId?: string | null;
+  photoData?: string | null;
+  createdAt?: Date | string | number | null;
+  syncStatus?: 'pending' | 'synced' | 'failed' | string;
+}
 
 export const ALL_BADGES: Badge[] = [
   {
@@ -61,8 +72,7 @@ export const ALL_BADGES: Badge[] = [
     title: 'اولین گزارش',
     description: 'اولین گزارش وضعیت شهری را در دیده‌بان ثبت کردید.',
     icon: '🏁',
-    unlocked: true,
-    unlockedAt: '۱۴۰۳/۰۴/۱۰',
+    unlocked: false,
     category: 'report',
   },
   {
@@ -70,8 +80,7 @@ export const ALL_BADGES: Badge[] = [
     title: 'ناظر مسیر',
     description: 'ثبت بیش از ۳ گزارش در ایستگاه‌های تبادلی و خطوط پرتردد.',
     icon: '🚧',
-    unlocked: true,
-    unlockedAt: '۱۴۰۳/۰۵/۰۲',
+    unlocked: false,
     category: 'activity',
   },
   {
@@ -79,8 +88,7 @@ export const ALL_BADGES: Badge[] = [
     title: 'پاکبان شهر',
     description: 'گزارش موفق در زمینه بهداشت، نظافت و سطل‌های زباله ایستگاه.',
     icon: '♻️',
-    unlocked: true,
-    unlockedAt: '۱۴۰۳/۰۵/۱۸',
+    unlocked: false,
     category: 'impact',
   },
   {
@@ -104,8 +112,7 @@ export const ALL_BADGES: Badge[] = [
     title: 'گزارشگر چابک',
     description: 'ثبت گزارش سریع در زیر ۳۰ ثانیه بدون معطلی.',
     icon: '⚡',
-    unlocked: true,
-    unlockedAt: '۱۴۰۳/۰۶/۰۱',
+    unlocked: false,
     category: 'activity',
   },
   {
@@ -241,52 +248,121 @@ export function calculateLevel(points: number) {
 const DEFAULT_PROFILE: CitizenProfile = {
   name: 'شهروند دیده‌بان',
   avatar: '👋',
-  joinedAt: '۳ ماه پیش',
-  points: 1240, // همانند موکاپ ۱۲۴۰ امتیاز جذاب برای نمایش اولیه
-  level: 4,
-  levelTitle: 'گزارشگر سطح ۴',
-  nextLevelPoints: 1500,
-  prevLevelPoints: 1000,
-  progressPercent: 83,
-  reportsCount: 23,
-  resolvedCount: 15,
-  upvotesCount: 87,
+  joinedAt: 'هنوز گزارشی ثبت نکرده‌اید',
+  points: 0,
+  level: 1,
+  levelTitle: 'مسافر آگاه',
+  nextLevelPoints: 299,
+  prevLevelPoints: 0,
+  progressPercent: 0,
+  reportsCount: 0,
+  resolvedCount: 0,
+  upvotesCount: 0,
   badges: ALL_BADGES,
-  redeemedVouchers: [
-    {
-      id: 'v-sample-1',
-      rewardId: 'metro_charge_20',
-      rewardTitle: 'شارژ ۲۰,۰۰۰ تومانی کارت بلیت مترو',
-      pointsSpent: 200,
-      code: 'METRO-7824-TH',
-      createdAt: '۱۴۰۳/۰۶/۱۰',
-      expiresAt: '۱۴۰۳/۰۷/۲۵',
-      isUsed: false,
-    },
-  ],
+  redeemedVouchers: [],
 };
 
-export function getCitizenProfile(): CitizenProfile {
+function toDate(value: ProfileReportInput['createdAt']) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatJoinedAt(reports: ProfileReportInput[]) {
+  const first = reports
+    .map((report) => toDate(report.createdAt))
+    .filter((date): date is Date => Boolean(date))
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+  return first ? first.toLocaleDateString('fa-IR') : DEFAULT_PROFILE.joinedAt;
+}
+
+function pointsForReport(report: ProfileReportInput) {
+  const createdAt = toDate(report.createdAt);
+  const hour = createdAt?.getHours();
+  return 50 + (report.photoData ? 25 : 0) + (hour != null && (hour >= 20 || hour < 6) ? 15 : 0);
+}
+
+function unlockedDate(reports: ProfileReportInput[], predicate: (report: ProfileReportInput) => boolean) {
+  const match = reports
+    .filter(predicate)
+    .map((report) => toDate(report.createdAt))
+    .filter((date): date is Date => Boolean(date))
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+  return match?.toLocaleDateString('fa-IR');
+}
+
+function deriveBadges(reports: ProfileReportInput[]): Badge[] {
+  const metroLines = new Set(reports.filter((r) => r.mode === 'metro' && r.lineId).map((r) => r.lineId));
+  const unlocked: Record<string, string | undefined> = {
+    first_report: reports.length > 0 ? unlockedDate(reports, () => true) : undefined,
+    road_warrior: reports.length >= 3 ? unlockedDate(reports, () => true) : undefined,
+    trash_buster: reports.some((r) => r.categoryId === '3' || r.subcategoryId === '3-5')
+      ? unlockedDate(reports, (r) => r.categoryId === '3' || r.subcategoryId === '3-5')
+      : undefined,
+    night_owl: reports.some((r) => {
+      const hour = toDate(r.createdAt)?.getHours();
+      return hour != null && (hour >= 20 || hour < 6);
+    })
+      ? unlockedDate(reports, (r) => {
+          const hour = toDate(r.createdAt)?.getHours();
+          return hour != null && (hour >= 20 || hour < 6);
+        })
+      : undefined,
+    city_hero: reports.length >= 20 ? unlockedDate(reports, () => true) : undefined,
+    speed_reporter: undefined,
+    photo_scout: reports.some((r) => Boolean(r.photoData)) ? unlockedDate(reports, (r) => Boolean(r.photoData)) : undefined,
+    metro_master: metroLines.size >= 3 ? unlockedDate(reports, (r) => r.mode === 'metro' && Boolean(r.lineId)) : undefined,
+  };
+
+  return ALL_BADGES.map((badge) => ({
+    ...badge,
+    unlocked: unlocked[badge.id] != null,
+    unlockedAt: unlocked[badge.id],
+  }));
+}
+
+function sanitizeVouchers(vouchers: RedeemedVoucher[] | undefined) {
+  return (vouchers ?? []).filter((voucher) => voucher.code !== SAMPLE_VOUCHER_CODE && voucher.id !== 'v-sample-1');
+}
+
+function buildProfile(base: Partial<CitizenProfile>, reports: ProfileReportInput[]): CitizenProfile {
+  const redeemedVouchers = sanitizeVouchers(base.redeemedVouchers);
+  const earnedPoints = reports.reduce((sum, report) => sum + pointsForReport(report), 0);
+  const spentPoints = redeemedVouchers.reduce((sum, voucher) => sum + voucher.pointsSpent, 0);
+  const points = Math.max(0, earnedPoints - spentPoints);
+  const lvl = calculateLevel(points);
+
+  return {
+    ...DEFAULT_PROFILE,
+    name: base.name || DEFAULT_PROFILE.name,
+    avatar: base.avatar || DEFAULT_PROFILE.avatar,
+    redeemedVouchers,
+    joinedAt: formatJoinedAt(reports),
+    points,
+    reportsCount: reports.length,
+    resolvedCount: reports.filter((report) => report.syncStatus === 'synced').length,
+    upvotesCount: 0,
+    badges: deriveBadges(reports),
+    level: lvl.level,
+    levelTitle: lvl.levelTitle,
+    nextLevelPoints: lvl.nextLevelPoints,
+    prevLevelPoints: lvl.prevLevelPoints,
+    progressPercent: lvl.progressPercent,
+  };
+}
+
+export function getCitizenProfile(reports: ProfileReportInput[] = []): CitizenProfile {
   if (typeof window === 'undefined') return DEFAULT_PROFILE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PROFILE));
-      return DEFAULT_PROFILE;
+      saveCitizenProfile(DEFAULT_PROFILE);
+      return buildProfile(DEFAULT_PROFILE, reports);
     }
     const parsed = JSON.parse(raw);
-    const lvl = calculateLevel(parsed.points ?? 1240);
-    return {
-      ...DEFAULT_PROFILE,
-      ...parsed,
-      level: lvl.level,
-      levelTitle: lvl.levelTitle,
-      nextLevelPoints: lvl.nextLevelPoints,
-      prevLevelPoints: lvl.prevLevelPoints,
-      progressPercent: lvl.progressPercent,
-    };
+    return buildProfile(parsed, reports);
   } catch {
-    return DEFAULT_PROFILE;
+    return buildProfile(DEFAULT_PROFILE, reports);
   }
 }
 
@@ -299,20 +375,31 @@ export function saveCitizenProfile(profile: CitizenProfile) {
   }
 }
 
-export function awardPointsForReport(options?: { hasPhoto?: boolean; isNight?: boolean }): {
+export function awardPointsForReport(options?: { hasPhoto?: boolean; isNight?: boolean; reports?: ProfileReportInput[] }): {
   pointsEarned: number;
   newTotal: number;
   unlockedBadge?: Badge;
   profile: CitizenProfile;
 } {
-  const profile = getCitizenProfile();
   let pointsToAdd = 50; // پایه برای هر گزارش
   if (options?.hasPhoto) pointsToAdd += 25; // پاداش تصویر
   if (options?.isNight) pointsToAdd += 15; // پاداش گزارش شبانه
 
+  if (options?.reports) {
+    const profile = getCitizenProfile(options.reports);
+    const previousProfile = getCitizenProfile(options.reports.slice(0, -1));
+    const unlockedBadge = profile.badges.find((badge) => badge.unlocked && !previousProfile.badges.find((old) => old.id === badge.id)?.unlocked);
+    saveCitizenProfile(profile);
+    return {
+      pointsEarned: pointsToAdd,
+      newTotal: profile.points,
+      unlockedBadge,
+      profile,
+    };
+  }
+
+  const profile = getCitizenProfile();
   const newPoints = profile.points + pointsToAdd;
-  const newReportsCount = profile.reportsCount + 1;
-  const newUpvotes = profile.upvotesCount + Math.floor(Math.random() * 3) + 1;
 
   // بررسی آنلاک شدن نشان‌ها
   let newlyUnlockedBadge: Badge | undefined;
@@ -326,10 +413,6 @@ export function awardPointsForReport(options?: { hasPhoto?: boolean; isNight?: b
         newlyUnlockedBadge = { ...b, unlocked: true, unlockedAt: 'همین الان' };
         return newlyUnlockedBadge;
       }
-      if (b.id === 'city_hero' && newReportsCount >= 25) {
-        newlyUnlockedBadge = { ...b, unlocked: true, unlockedAt: 'همین الان' };
-        return newlyUnlockedBadge;
-      }
     }
     return b;
   });
@@ -338,8 +421,6 @@ export function awardPointsForReport(options?: { hasPhoto?: boolean; isNight?: b
   const updatedProfile: CitizenProfile = {
     ...profile,
     points: newPoints,
-    reportsCount: newReportsCount,
-    upvotesCount: newUpvotes,
     badges: updatedBadges,
     level: lvl.level,
     levelTitle: lvl.levelTitle,
@@ -358,13 +439,13 @@ export function awardPointsForReport(options?: { hasPhoto?: boolean; isNight?: b
   };
 }
 
-export function redeemCityService(rewardId: string): {
+export function redeemCityService(rewardId: string, currentProfile?: CitizenProfile): {
   success: boolean;
   message: string;
   voucher?: RedeemedVoucher;
   updatedProfile?: CitizenProfile;
 } {
-  const profile = getCitizenProfile();
+  const profile = currentProfile ?? getCitizenProfile();
   const reward = CITY_REWARDS_CATALOG.find((r) => r.id === rewardId);
 
   if (!reward) {
