@@ -9,6 +9,9 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  experimental: {
+    cpus: 1,
+  },
 };
 
 export default withSerwist(nextConfig);
