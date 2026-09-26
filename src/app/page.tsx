@@ -3,6 +3,7 @@ import { AlertCircle, BarChart3, ChevronLeft, CloudOff, Database, FileText, Map,
 import { prisma } from '@/lib/prisma';
 import { toFa } from '@/lib/format';
 import { StatCard, Surface } from '@/components/ui';
+import CitizenHomeBanner from '@/components/CitizenHomeBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,13 @@ export default async function Home() {
               </div>
             </div>
           </div>
-          <section className="overflow-hidden rounded-lg border border-blue-700 bg-blue-700 text-white shadow-xl shadow-blue-700/20">
+
+          {/* بنر باشگاه شهروندی و سکه‌های پاداش */}
+          <div className="mb-4">
+            <CitizenHomeBanner />
+          </div>
+
+          <section className="overflow-hidden rounded-2xl border border-blue-700 bg-gradient-to-tr from-blue-700 to-sky-600 text-white shadow-xl shadow-blue-700/20">
             <Link href="/report" className="block p-5 active:bg-blue-800 transition-colors">
               <div className="flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-4">

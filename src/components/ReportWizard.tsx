@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowRight, Camera, Check, ChevronLeft, Clock, CreditCard, Cog, Construction, Home, Loader2,
-  MapPin, Megaphone, Pencil, Phone, Search, ShieldAlert, ShieldCheck, Train, Bus, TramFront, X,
+  ArrowRight, Camera, Check, ChevronLeft, Clock, CreditCard, Cog, Construction, Gift, Home, Loader2,
+  MapPin, Megaphone, Pencil, Phone, Search, ShieldAlert, ShieldCheck, Sparkles, Train, Bus, TramFront, Trophy, X,
   type LucideIcon,
 } from 'lucide-react';
 import { db, type OfflineReport } from '@/lib/db';
@@ -17,6 +17,7 @@ import {
   MAX_DESCRIPTION, type Meta, type MetaStation, type Mode, type Severity, type SubmitResult,
   type VehicleContext,
 } from '@/lib/types';
+import { awardPointsForReport, Badge } from '@/lib/gamification';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   '1': Clock, '2': Cog, '3': Construction, '4': ShieldAlert, '5': Megaphone, '6': CreditCard, '7': Pencil,
@@ -45,6 +46,11 @@ interface Done {
   result: SubmitResult | null;
   sensitive: boolean;
   stationId: string | null;
+  earnedReward?: {
+    pointsEarned: number;
+    newTotal: number;
+    unlockedBadge?: Badge;
+  };
 }
 
 export default function ReportWizard() {
@@ -191,7 +197,25 @@ export default function ReportWizard() {
     // اگر آنلاین باشیم همین‌جا کد و آمار ایستگاه را می‌گیریم؛ وگرنه در صف می‌ماند
     const result = await sendReport(record);
     if (result) void syncPending(); // آپلود عکس در پس‌زمینه
-    setDone({ code: trackingCode(uuid), result, sensitive: subcategory.isSensitive, stationId });
+
+    // پاداش مشارکت شهروندی
+    const hour = now.getHours();
+    const rewardInfo = awardPointsForReport({
+      hasPhoto: Boolean(canPhoto && photo),
+      isNight: hour >= 20 || hour < 6,
+    });
+
+    setDone({
+      code: trackingCode(uuid),
+      result,
+      sensitive: subcategory.isSensitive,
+      stationId,
+      earnedReward: {
+        pointsEarned: rewardInfo.pointsEarned,
+        newTotal: rewardInfo.newTotal,
+        unlockedBadge: rewardInfo.unlockedBadge,
+      },
+    });
     setStep(4);
     setSubmitting(false);
   }
@@ -247,6 +271,43 @@ export default function ReportWizard() {
           <p className="text-xs text-slate-500">کد رهگیری</p>
           <p dir="ltr" className="mt-1 text-2xl font-bold tracking-widest text-slate-900">{done.code}</p>
         </div>
+
+        {/* پاداش سکه و خدمات شهری */}
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 p-4 text-white shadow-lg shadow-sky-500/20 text-right">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl backdrop-blur-sm">
+                🎉
+              </span>
+              <div>
+                <p className="text-xs font-bold text-sky-100">پاداش مشارکت شهروندی</p>
+                <p className="text-base font-black">+{toFa(done.earnedReward?.pointsEarned ?? 50)} سکه دریافت کردید!</p>
+              </div>
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] text-sky-100">موجودی کل:</p>
+              <p className="text-base font-black text-amber-300">{toFa(done.earnedReward?.newTotal ?? 1290)} سکه</p>
+            </div>
+          </div>
+
+          {done.earnedReward?.unlockedBadge && (
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/20 p-2.5 text-xs font-bold text-amber-200 backdrop-blur-sm">
+              <span className="text-lg">{done.earnedReward.unlockedBadge.icon}</span>
+              <span>نشان جدید باز شد: «{done.earnedReward.unlockedBadge.title}»</span>
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center justify-between border-t border-white/20 pt-2.5 text-xs">
+            <span className="text-sky-100">قابل تبدیل به شارژ کارت بلیت مترو و سینما</span>
+            <Link
+              href="/profile"
+              className="inline-flex items-center gap-1 rounded-lg bg-white/20 px-2.5 py-1 font-black text-white hover:bg-white/30 transition-colors"
+            >
+              <Gift size={13} />
+              <span>جوایز و خدمات شهری</span>
+            </Link>
+          </div>
+        </div>
         {result?.stationWeekCount != null && result.stationName && !done.sensitive && (
           <div className="space-y-3 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-medium text-blue-900">
             <p>
@@ -298,7 +359,7 @@ export default function ReportWizard() {
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white/95 backdrop-blur">
         <div className="flex items-center gap-2 px-3 py-2">
-          {step > 1 && !submitted ? (
+          {step > 1 && !submitting ? (
             <button onClick={back} aria-label="بازگشت" className="flex h-11 w-11 items-center justify-center rounded-xl active:bg-slate-100"><ArrowRight size={22} /></button>
           ) : (
             <div className="w-11" /> /* Spacer to keep title centered if needed, or just nothing */
@@ -309,6 +370,15 @@ export default function ReportWizard() {
           <span className="pl-2 text-sm text-slate-500">مرحله {toFa(step)} از {toFa(3)}</span>
         </div>
         <div className="h-1 bg-slate-100"><div className="h-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} /></div>
+        <div className="flex items-center justify-between bg-sky-50 px-4 py-1.5 text-[11px] font-bold text-sky-800 border-b border-sky-100/80">
+          <span className="flex items-center gap-1.5">
+            <Sparkles size={13} className="text-amber-500 shrink-0" />
+            ثبت این گزارش = ۵۰ سکه شهروندی (تبدیل به خدمات شهری)
+          </span>
+          <Link href="/profile" className="text-sky-600 hover:underline shrink-0">
+            مشاهده جوایز
+          </Link>
+        </div>
       </header>
 
       {/* ───────────── مرحله ۱: موقعیت ───────────── */}

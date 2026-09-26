@@ -4,6 +4,7 @@ import { CheckCircle, Clock3, FileText, ShieldCheck } from 'lucide-react';
 import { revalidatePath } from 'next/cache';
 import { AppHeader, StatCard, Surface } from '@/components/ui';
 import { toFa } from '@/lib/format';
+import { DeleteReportButton } from '@/components/DeleteReportButton';
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,14 @@ async function updateStatus(id: string, newStatus: string) {
     data: { status: newStatus }
   });
   revalidatePath('/dashboard');
+}
+
+// Server action to permanently delete a report (removes it for admin and public views)
+async function deleteReport(id: string) {
+  'use server';
+  await prisma.report.delete({ where: { id } });
+  revalidatePath('/dashboard');
+  revalidatePath('/public/list');
 }
 
 export default async function DashboardPage() {
@@ -36,7 +45,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
-      <AppHeader title="داشبورد مدیریت گزارش‌ها" eyebrow="تغییر وضعیت، بدون امکان حذف" icon={ShieldCheck} dark />
+      <AppHeader title="داشبورد مدیریت گزارش‌ها" eyebrow="تغییر وضعیت و حذف گزارش‌های جا مانده" icon={ShieldCheck} dark />
 
       <main className="mx-auto w-full max-w-7xl space-y-4 p-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -50,7 +59,7 @@ export default async function DashboardPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] p-4">
             <div>
               <h2 className="font-extrabold text-slate-950">صف عملیاتی گزارش‌ها</h2>
-              <p className="mt-1 text-sm text-slate-500">گزارش حذف نمی‌شود؛ فقط وضعیت آن تغییر می‌کند.</p>
+              <p className="mt-1 text-sm text-slate-500">وضعیت گزارش قابل تغییر است و در صورت نیاز (مثلاً گزارش‌های جا مانده) می‌توان آن را حذف کرد.</p>
             </div>
             <Link href="/public/list" className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white">نمای عمومی</Link>
           </div>
@@ -99,17 +108,25 @@ export default async function DashboardPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-left">
-                      {report.status !== 'resolved' && (
-                        <form action={async () => {
-                          'use server';
-                          await updateStatus(report.id, report.status === 'submitted' ? 'acknowledged' : 'resolved');
-                        }}>
-                          <button type="submit" className="flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-100">
-                            <CheckCircle size={14} />
-                            {report.status === 'submitted' ? 'تأیید و بررسی' : 'ثبت رفع مشکل'}
-                          </button>
-                        </form>
-                      )}
+                      <div className="flex items-center justify-end gap-2">
+                        {report.status !== 'resolved' && (
+                          <form action={async () => {
+                            'use server';
+                            await updateStatus(report.id, report.status === 'submitted' ? 'acknowledged' : 'resolved');
+                          }}>
+                            <button type="submit" className="flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-100">
+                              <CheckCircle size={14} />
+                              {report.status === 'submitted' ? 'تأیید و بررسی' : 'ثبت رفع مشکل'}
+                            </button>
+                          </form>
+                        )}
+                        <DeleteReportButton
+                          action={async () => {
+                            'use server';
+                            await deleteReport(report.id);
+                          }}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
