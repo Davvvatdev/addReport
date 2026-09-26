@@ -15,6 +15,11 @@ export interface OfflineReport {
   lat?: number;
   lng?: number;
   severity: string;
+  impact?: string;
+  tripPurpose?: string;
+  riderType?: string;
+  accessNeed?: string;
+  gender?: string;
   isAnonymous: boolean;
   reporterToken: string;
   occurredAt: Date;

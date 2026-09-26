@@ -5,6 +5,8 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { formatJalali, toFa } from '@/lib/format';
 import { AppHeader, Notice, Surface } from '@/components/ui';
+import { ConfirmButton } from '@/components/CitizenActions';
+import { STATUS_LABEL, STATUSES, severityCls, severityLabel, statusCls, statusLabel } from '@/lib/report-meta';
 
 export const metadata: Metadata = { title: 'گزارش‌های عمومی | دیده‌بان حمل‌ونقل تهران' };
 export const dynamic = 'force-dynamic';
@@ -16,14 +18,6 @@ const RANGES = [
   { v: '30', label: '۳۰ روز' },
   { v: '', label: 'همه' },
 ];
-const SEVERITY: Record<string, { label: string; cls: string }> = {
-  low: { label: 'کم', cls: 'bg-emerald-100 text-emerald-800' },
-  medium: { label: 'متوسط', cls: 'bg-amber-100 text-amber-800' },
-  high: { label: 'زیاد', cls: 'bg-red-100 text-red-800' },
-};
-const STATUS: Record<string, string> = {
-  submitted: 'ثبت‌شده', under_review: 'در حال بررسی', acknowledged: 'تأییدشده', resolved: 'رفع‌شده',
-};
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 864e5);
 
@@ -36,6 +30,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
   const station = one(sp.station);
   const line = one(sp.line);
   const days = one(sp.days) ?? '';
+  const status = one(sp.status);
   const page = Math.max(1, Number(one(sp.page)) || 1);
 
   const where: Prisma.ReportWhereInput = {
@@ -43,6 +38,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
     ...(station && { stationId: station }),
     ...(line && { lineId: line }),
     ...(days && { createdAt: { gte: daysAgo(Number(days)) } }),
+    ...(status && { status }),
   };
 
   const [categories, stations, lines, items, total, sensitiveGroups] = await Promise.all([
@@ -55,7 +51,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { subcategory: true, station: true, line: true },
+      include: { subcategory: true, station: true, line: true, _count: { select: { confirmations: true } } },
     }),
     prisma.report.count({ where: { ...where, subcategory: { isSensitive: false } } }),
     prisma.report.groupBy({
@@ -69,7 +65,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
   const sensitiveTotal = sensitiveGroups.reduce((n, g) => n + g._count._all, 0);
   const qs = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const merged = { category, station, line, days: days || undefined, ...over };
+    const merged = { category, station, line, days: days || undefined, status, ...over };
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
     const s = p.toString();
     return s ? `/public/list?${s}` : '/public/list';
@@ -92,7 +88,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
               <Filter size={17} className="text-blue-600" />
               فیلتر گزارش‌ها
             </span>
-            {(category || line || station || days) && (
+            {(category || line || station || days || status) && (
               <Link href="/public/list" className="text-xs font-bold text-rose-700 underline underline-offset-4">
                 پاک کردن فیلترها
               </Link>
@@ -103,6 +99,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
             <Select name="line" value={line} placeholder="همه خطوط" options={lines.map((l) => [l.id, l.name])} />
             <Select name="station" value={station} placeholder="همه ایستگاه‌ها" options={stations.map((s) => [s.id, s.name])} />
             <Select name="days" value={days} placeholder="همه زمان‌ها" options={RANGES.filter((r) => r.v).map((r) => [r.v, r.label])} />
+            <Select name="status" value={status} placeholder="همه وضعیت‌ها" options={STATUSES.map((s) => [s, STATUS_LABEL[s]])} />
             <button className="btn btn-primary pressable col-span-2 min-h-12">
               اعمال فیلتر
             </button>
@@ -131,7 +128,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
           <li key={r.id} className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-start justify-between gap-2">
               <p className="font-black text-slate-900 leading-7">{r.subcategory.titleFa}</p>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${SEVERITY[r.severity]?.cls}`}>{SEVERITY[r.severity]?.label}</span>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${severityCls(r.severity)}`}>{severityLabel(r.severity)}</span>
             </div>
             <p className="text-xs font-bold text-slate-600">
               {r.station?.name ?? 'ایستگاه نامشخص'}
@@ -144,17 +141,21 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
             {r.description && <p className="rounded-xl bg-slate-50 p-3 text-xs leading-6 text-slate-700 font-medium">{r.description}</p>}
             {r.photoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={r.photoUrl} alt="عکس پیوست گزارش" loading="lazy" className="max-h-48 w-full rounded-2xl object-cover" />
+              <img src={`/api/reports/${r.id}/photo`} alt="عکس پیوست گزارش" loading="lazy" className="max-h-48 w-full rounded-2xl object-cover" />
             )}
             <div className="flex items-center justify-between text-xs text-slate-400 font-medium pt-1 border-t border-slate-100">
               <span>{formatJalali(r.occurredAt)}</span>
               <span className="flex items-center gap-1.5 text-slate-500 font-bold">
                 {r.photoUrl && <Camera size={14} className="text-slate-400" />}
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
-                  {STATUS[r.status] ?? r.status}
+                <span className={`rounded-full px-2 py-0.5 text-[11px] ${statusCls(r.status)}`}>
+                  {statusLabel(r.status)}
                 </span>
               </span>
             </div>
+            {r.statusNote && <p className="text-xs leading-6 text-slate-600"><b>پاسخ:</b> {r.statusNote}</p>}
+            {!['resolved', 'rejected'].includes(r.status) && (
+              <ConfirmButton reportId={r.id} initialCount={r._count.confirmations} />
+            )}
           </li>
           ))}
           {items.length === 0 && (

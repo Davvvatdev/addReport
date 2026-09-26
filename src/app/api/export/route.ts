@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-const headers = ['id', 'createdAt', 'occurredAt', 'mode', 'line', 'station', 'direction', 'vehicleContext', 'category', 'subcategory', 'severity', 'status', 'lat', 'lng'] as const;
+const headers = ['id', 'createdAt', 'occurredAt', 'mode', 'line', 'station', 'direction', 'vehicleContext', 'category', 'subcategory', 'severity', 'impact', 'status', 'lat', 'lng'] as const;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const format = searchParams.get('format') || 'json';
 
   try {
+    // گزارش‌های حساس به‌صورت موردی منتشر نمی‌شوند (ایستگاه + زمان دقیق می‌تواند گزارش‌دهنده را لو دهد)
     const reports = await prisma.report.findMany({
+      where: { subcategory: { isSensitive: false } },
       include: {
         category: true,
         subcategory: true,
@@ -19,7 +20,6 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Sanitize data for public export (remove tokens, precise sensitive locations etc if needed)
     const sanitizedReports = reports.map(r => ({
       id: r.id,
       createdAt: r.createdAt.toISOString(),
@@ -32,10 +32,10 @@ export async function GET(request: Request) {
       category: r.category.titleFa,
       subcategory: r.subcategory.titleFa,
       severity: r.severity,
+      impact: r.impact,
       status: r.status,
-      // For sensitive categories, we don't expose exact lat/lng
-      lat: r.subcategory.isSensitive ? null : r.lat,
-      lng: r.subcategory.isSensitive ? null : r.lng,
+      lat: r.lat,
+      lng: r.lng,
     }));
 
     if (format === 'csv') {

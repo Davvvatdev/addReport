@@ -1,6 +1,7 @@
 export type Mode = 'metro' | 'bus' | 'brt';
 export type VehicleContext = 'in_station' | 'on_vehicle' | 'transfer_point';
-export type Severity = 'low' | 'medium' | 'high';
+export type { Severity } from './report-meta';
+import type { Severity } from './report-meta';
 
 export interface MetaSubcategory {
   id: string;
@@ -42,8 +43,14 @@ export interface ReportPayload {
   vehicleContext: VehicleContext;
   categoryId: string;
   subcategoryId: string;
+  direction?: string | null;
   description?: string | null;
   severity: Severity;
+  impact?: string | null;
+  tripPurpose?: string | null;
+  riderType?: string | null;
+  accessNeed?: string | null;
+  gender?: string | null;
   lat?: number | null;
   lng?: number | null;
   occurredAt?: string;

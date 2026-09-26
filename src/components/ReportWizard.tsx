@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Camera, Check, ChevronLeft, Clock, CreditCard, Cog, Construction, Gift, Home, Loader2,
   MapPin, Megaphone, Pencil, Phone, Search, ShieldAlert, ShieldCheck, Sparkles, Train, Bus, TramFront, Trophy, X,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 import { db, type OfflineReport } from '@/lib/db';
@@ -19,9 +20,10 @@ import {
 } from '@/lib/types';
 import { awardPointsForReport, Badge } from '@/lib/gamification';
 import { Notice } from '@/components/ui';
+import { ACCESS_NEEDS, GENDERS, IMPACTS, RIDER_TYPES, TRIP_PURPOSES, lineTermini, type Impact } from '@/lib/report-meta';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  '1': Cog, '2': Clock, '3': Construction, '4': ShieldAlert, '5': Megaphone, '6': CreditCard, '7': Pencil,
+  '1': Clock, '2': Cog, '3': Construction, '4': ShieldAlert, '5': Megaphone, '6': CreditCard, '7': Pencil,
 };
 
 const CATEGORY_STYLES: Record<string, { bg: string; border: string; edge: string; iconBg: string; iconColor: string }> = {
@@ -47,7 +49,23 @@ const SEVERITIES: { id: Severity; label: string; activeCls: string; inactiveCls:
   { id: 'low', label: 'کم', activeCls: 'border-emerald-500 bg-emerald-500 text-white font-black [--edge:#047857]', inactiveCls: 'border-emerald-200 bg-white text-emerald-800 font-bold [--edge:#6ee7b7]' },
   { id: 'medium', label: 'متوسط', activeCls: 'border-amber-500 bg-amber-500 text-white font-black [--edge:#b45309]', inactiveCls: 'border-amber-200 bg-white text-amber-800 font-bold [--edge:#fcd34d]' },
   { id: 'high', label: 'زیاد', activeCls: 'border-rose-500 bg-rose-500 text-white font-black [--edge:#be123c]', inactiveCls: 'border-rose-200 bg-white text-rose-800 font-bold [--edge:#fda4af]' },
+  { id: 'critical', label: 'بحرانی', activeCls: 'border-red-800 bg-red-800 text-white font-black [--edge:#450a0a]', inactiveCls: 'border-red-300 bg-white text-red-900 font-bold [--edge:#fca5a5]' },
 ];
+const WHEN: { id: string; label: string; minutes: number }[] = [
+  { id: 'now', label: 'همین الان', minutes: 0 },
+  { id: '10m', label: '۱۰ دقیقه پیش', minutes: 10 },
+  { id: '1h', label: 'یک ساعت پیش', minutes: 60 },
+  { id: 'today', label: 'امروز، زودتر', minutes: 180 },
+  { id: 'yesterday', label: 'دیروز', minutes: 1440 },
+];
+const TRIP_KEY = 'trip_ctx_v1';
+type TripContext = { riderType?: string; tripPurpose?: string; accessNeed?: string; gender?: string };
+const loadTrip = (): TripContext => {
+  try { return JSON.parse(localStorage.getItem(TRIP_KEY) ?? '{}'); } catch { return {}; }
+};
+const saveTrip = (t: TripContext) => {
+  try { localStorage.setItem(TRIP_KEY, JSON.stringify(t)); } catch {}
+};
 const GEO_MAX_KM = 1.5;
 
 const clean = (title: string) => title.replace(/[\p{Extended_Pictographic}️]/gu, '').trim();
@@ -73,6 +91,7 @@ export default function ReportWizard() {
   const [lineId, setLineId] = useState<string | null>(null);
   const [stationId, setStationId] = useState<string | null>(null);
   const [context, setContext] = useState<VehicleContext>('in_station');
+  const [direction, setDirection] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -80,6 +99,10 @@ export default function ReportWizard() {
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
 
   const [severity, setSeverity] = useState<Severity>('medium');
+  const [impact, setImpact] = useState<Impact | null>(null);
+  const [when, setWhen] = useState('now');
+  const [trip, setTrip] = useState<TripContext>({});
+  const [agreed, setAgreed] = useState(false);
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -96,6 +119,7 @@ export default function ReportWizard() {
     /* eslint-disable react-hooks/set-state-in-effect */
     if (cached) setMeta(cached);
     setConsentedState(hasConsented());
+    setTrip(loadTrip());
     /* eslint-enable react-hooks/set-state-in-effect */
     loadMeta().then((m) => (m ? setMeta(m) : !cached && setMetaFailed(true)));
   }, []);
@@ -130,25 +154,36 @@ export default function ReportWizard() {
 
   const modeLines = useMemo(() => meta?.lines.filter((l) => l.mode === mode) ?? [], [meta, mode]);
   const stationList = useMemo(() => {
-    if (!meta || mode !== 'metro') return [];
+    if (!meta || modeLines.length === 0) return [];
+    const modeLineIds = new Set(modeLines.map((l) => l.id));
     const q = normalizeFa(query);
     
     // اگر نه خطی انتخاب شده و نه جستجویی انجام شده، لیست خالی بماند
     if (!lineId && !q) return [];
     
     let list = meta.stations.filter(
-      (s) => (!lineId || s.lineIds.includes(lineId)) && (!q || normalizeFa(s.name).includes(q)),
+      (s) =>
+        s.lineIds.some((id) => modeLineIds.has(id)) &&
+        (!lineId || s.lineIds.includes(lineId)) &&
+        (!q || normalizeFa(s.name).includes(q)),
     );
     if (coords) {
       const d = (s: MetaStation) => (s.lat != null && s.lng != null ? distanceKm(coords.lat, coords.lng, s.lat, s.lng) : 1e9);
       list = [...list].sort((a, b) => d(a) - d(b));
     }
     return list;
-  }, [meta, mode, lineId, query, coords]);
+  }, [meta, modeLines, lineId, query, coords]);
+  const termini = line ? lineTermini(line.name) : [];
 
   function pickStation(s: MetaStation | null) {
     setStationId(s?.id ?? null);
-    if (s && !lineId && s.lineIds.length === 1) setLineId(s.lineIds[0]);
+    if (s && !lineId && s.lineIds.length === 1) { setLineId(s.lineIds[0]); setDirection(null); }
+  }
+
+  function updateTrip(key: keyof TripContext, value: string) {
+    const next = { ...trip, [key]: trip[key] === value ? undefined : value };
+    setTrip(next);
+    saveTrip(next);
   }
 
   function confirmNearest() {
@@ -176,11 +211,13 @@ export default function ReportWizard() {
     setError(null);
     const uuid = crypto.randomUUID();
     const now = new Date();
+    const occurredAt = new Date(now.getTime() - (WHEN.find((w) => w.id === when)?.minutes ?? 0) * 60_000);
     const record: OfflineReport = {
       uuid,
       mode,
       lineId: lineId ?? undefined,
       stationId: stationId ?? undefined,
+      direction: direction ?? undefined,
       vehicleContext: context,
       categoryId,
       subcategoryId: subcategory.id,
@@ -190,9 +227,14 @@ export default function ReportWizard() {
       lat: subcategory.isSensitive ? undefined : coords?.lat,
       lng: subcategory.isSensitive ? undefined : coords?.lng,
       severity,
+      impact: impact ?? undefined,
+      riderType: trip.riderType,
+      tripPurpose: trip.tripPurpose,
+      accessNeed: trip.accessNeed,
+      gender: trip.gender,
       isAnonymous: true,
       reporterToken: getReporterToken(),
-      occurredAt: now,
+      occurredAt,
       createdAt: now,
       syncStatus: 'pending',
     };
@@ -236,7 +278,7 @@ export default function ReportWizard() {
   function reset() {
     setStep(1); setLineId(null); setStationId(null); setQuery(''); setCategoryId(null);
     setSubcategoryId(null); setSeverity('medium'); setDescription(''); setPhoto(null); setDone(null);
-    setContext('in_station'); setError(null);
+    setContext('in_station'); setError(null); setDirection(null); setImpact(null); setWhen('now');
   }
 
   function back() {
@@ -283,6 +325,10 @@ export default function ReportWizard() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs text-slate-500">کد رهگیری</p>
           <p dir="ltr" className="mt-1 text-2xl font-bold tracking-widest text-slate-900">{done.code}</p>
+          <Link href={`/track?code=${done.code}`} className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 underline underline-offset-4">
+            <ClipboardList size={16} /> پیگیری وضعیت رسیدگی
+          </Link>
+          <p className="mt-1 text-xs text-slate-400">این کد را نگه دارید؛ در «پروفایل ← گزارش‌های من» هم هست.</p>
         </div>
 
         {/* پاداش سکه و خدمات شهری */}
@@ -311,7 +357,7 @@ export default function ReportWizard() {
           )}
 
           <div className="mt-3 flex items-center justify-between border-t border-white/20 pt-2.5 text-xs">
-            <span className="text-sky-100">قابل تبدیل به شارژ کارت بلیت مترو و سینما</span>
+            <span className="text-sky-100">سکه‌ها در نسخه آزمایشی نمایشی‌اند و هنوز قابل تبدیل نیستند</span>
             <Link
               href="/profile"
               className="btn pressable shrink-0 gap-1 rounded-lg bg-white px-2.5 py-1 font-black text-blue-700 [--edge:#1e3a8a]"
@@ -383,7 +429,7 @@ export default function ReportWizard() {
         <div className="notice notice-info items-center justify-between rounded-none border-b border-blue-100 px-4 py-1.5 text-[11px] font-bold">
           <span className="flex items-center gap-1.5">
             <Sparkles size={13} className="text-amber-500 shrink-0" />
-            ثبت این گزارش = ۵۰ سکه شهروندی (تبدیل به خدمات شهری)
+            ثبت این گزارش = ۵۰ سکه شهروندی (نمایشی)
           </span>
           <Link href="/profile" className="shrink-0 font-black text-blue-700 underline underline-offset-4">
             مشاهده جوایز
@@ -413,7 +459,7 @@ export default function ReportWizard() {
               {MODES.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => { setMode(id); setLineId(null); setStationId(null); setQuery(''); }}
+                  onClick={() => { setMode(id); setLineId(null); setStationId(null); setQuery(''); setDirection(null); }}
                   aria-pressed={mode === id}
                   className={`pressable flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-2xl border text-xs font-black ${
                     mode === id
@@ -433,7 +479,7 @@ export default function ReportWizard() {
               {modeLines.map((l) => (
                 <button
                   key={l.id}
-                  onClick={() => { setLineId(lineId === l.id ? null : l.id); setStationId(null); }}
+                  onClick={() => { setLineId(lineId === l.id ? null : l.id); setStationId(null); setDirection(null); }}
                   aria-pressed={lineId === l.id}
                   className={`pressable flex min-h-11 items-center gap-2 rounded-2xl border px-3.5 text-xs font-black ${
                     lineId === l.id
@@ -448,7 +494,7 @@ export default function ReportWizard() {
             </section>
           )}
 
-          {mode === 'metro' ? (
+          {modeLines.length > 0 ? (
             <section className="space-y-2">
               <label className="relative block">
                 <Search size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -485,7 +531,7 @@ export default function ReportWizard() {
             </section>
           ) : (
             <Notice tone="neutral" className="text-sm">
-              فهرست ایستگاه‌های اتوبوس و بی‌آر‌تی هنوز اضافه نشده؛ می‌توانید رد شوید و مشکل را ثبت کنید.
+              فهرست خطوط و ایستگاه‌های اتوبوس هنوز اضافه نشده؛ می‌توانید رد شوید و مشکل را ثبت کنید.
             </Notice>
           )}
 
@@ -505,9 +551,27 @@ export default function ReportWizard() {
             </div>
           </section>
 
+          {termini.length === 2 && context !== 'transfer_point' && (
+            <section>
+              <p className="mb-2 text-sm font-medium text-slate-600">جهت حرکت <span className="text-xs text-slate-400">(اختیاری)</span></p>
+              <div className="grid grid-cols-2 gap-2">
+                {termini.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setDirection(direction === t ? null : t)}
+                    aria-pressed={direction === t}
+                    className={`pressable min-h-12 rounded-2xl border px-2 text-sm font-bold ${direction === t ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]' : 'border-slate-200 bg-white text-slate-700'}`}
+                  >
+                    به سمت {t}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className="mt-auto flex gap-3 pt-2">
             <button
-              onClick={() => { setStationId(null); setLineId(null); setStep(2); }}
+              onClick={() => { setStationId(null); setLineId(null); setDirection(null); setStep(2); }}
               className="btn btn-neutral pressable min-h-14 flex-1"
             >
               نمی‌دانم / رد کردن
@@ -614,7 +678,7 @@ export default function ReportWizard() {
 
           <section>
             <p className="mb-2 text-xs font-bold text-slate-700">شدت مسئله را مشخص کنید:</p>
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-4 gap-2">
               {SEVERITIES.map((s) => (
                 <button
                   key={s.id}
@@ -628,6 +692,24 @@ export default function ReportWizard() {
             </div>
           </section>
 
+          <section>
+            <p className="mb-2 text-xs font-bold text-slate-700">چه زمانی رخ داد؟</p>
+            <div className="flex flex-wrap gap-2">
+              {WHEN.map((w) => (
+                <Chip key={w.id} active={when === w.id} onClick={() => setWhen(w.id)}>{w.label}</Chip>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <p className="mb-2 text-xs font-bold text-slate-700">چه اثری روی سفرتان داشت؟ <span className="font-normal text-slate-400">(اختیاری)</span></p>
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(IMPACTS) as [Impact, string][]).map(([k, v]) => (
+                <Chip key={k} active={impact === k} onClick={() => setImpact(impact === k ? null : k)}>{v}</Chip>
+              ))}
+            </div>
+          </section>
+
           {isOther ? (
             <DescriptionField value={description} onChange={setDescription} label="توضیح دهید" />
           ) : (
@@ -637,17 +719,33 @@ export default function ReportWizard() {
             </details>
           )}
 
+          <details className="rounded-2xl border border-slate-200 bg-white">
+            <summary className="min-h-12 cursor-pointer list-none px-4 py-3 text-sm font-medium text-slate-600">
+              درباره سفر شما (اختیاری — برای تحلیل بهتر، بدون هویت)
+            </summary>
+            <div className="space-y-3 px-4 pb-4">
+              <ChipGroup label="چقدر از حمل‌ونقل عمومی استفاده می‌کنید؟" options={RIDER_TYPES} value={trip.riderType} onPick={(v) => updateTrip('riderType', v)} />
+              <ChipGroup label="هدف این سفر" options={TRIP_PURPOSES} value={trip.tripPurpose} onPick={(v) => updateTrip('tripPurpose', v)} />
+              <ChipGroup label="نیاز ویژه" options={ACCESS_NEEDS} value={trip.accessNeed} onPick={(v) => updateTrip('accessNeed', v)} />
+              <ChipGroup label="جنسیت (فقط برای آمار تجمیعی امنیت)" options={GENDERS} value={trip.gender} onPick={(v) => updateTrip('gender', v)} />
+              <p className="text-[11px] text-slate-400">این پاسخ‌ها روی همین گوشی به خاطر سپرده می‌شوند و هرگز به‌صورت عمومی منتشر نمی‌شوند.</p>
+            </div>
+          </details>
+
           {!consented && (
-            <p className="text-xs leading-6 text-slate-500">
-              با ثبت گزارش، می‌پذیرید که گزارش شما بدون هیچ اطلاعات هویتی به‌صورت عمومی منتشر شود.{' '}
-              <Link href="/privacy" className="font-bold text-blue-700 underline underline-offset-4">حریم خصوصی</Link>
-            </p>
+            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-xs leading-6 text-slate-600">
+              <input id="consent" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-blue-600" />
+              <span>
+                می‌پذیرم که گزارشم بدون اطلاعات هویتی منتشر و برای بهبود خدمات حمل‌ونقل تحلیل شود. هر زمان بخواهم می‌توانم همه گزارش‌هایم را حذف کنم.{' '}
+                <Link href="/privacy" className="font-bold text-blue-700 underline underline-offset-4">حریم خصوصی</Link>
+              </span>
+            </label>
           )}
           {error && <Notice tone="danger" role="alert" className="text-sm">{error}</Notice>}
 
           <button
             onClick={submit}
-            disabled={submitting || photoBusy || (isOther && !description.trim())}
+            disabled={submitting || photoBusy || (isOther && !description.trim()) || (!consented && !agreed)}
             className="btn btn-primary pressable mt-auto min-h-16 gap-2 text-xl font-extrabold"
           >
             {submitting ? <Loader2 className="animate-spin" /> : 'ثبت'}
@@ -670,5 +768,31 @@ function DescriptionField({ value, onChange, label }: { value: string; onChange:
       />
       <span className="mt-1 block text-left text-xs text-slate-400">{toFa(value.length)} / {toFa(MAX_DESCRIPTION)}</span>
     </label>
+  );
+}
+
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`pressable min-h-10 rounded-full border px-3.5 text-xs font-bold ${active ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]' : 'border-slate-200 bg-white text-slate-700'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ChipGroup({ label, options, value, onPick }: { label: string; options: Record<string, string>; value?: string; onPick: (v: string) => void }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-bold text-slate-600">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {Object.entries(options).map(([k, v]) => (
+          <Chip key={k} active={value === k} onClick={() => onPick(k)}>{v}</Chip>
+        ))}
+      </div>
+    </div>
   );
 }

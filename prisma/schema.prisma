@@ -22,11 +22,19 @@ model Report {
   photoUrl        String?
   lat             Float?
   lng             Float?
-  severity        String   @default("medium") // "low" | "medium" | "high"
+  severity        String   @default("medium") // "low" | "medium" | "high" | "critical"
+  impact          String?  // "time_loss" | "could_not_board" | "safety_risk" | "health" | "accessibility"
+  tripPurpose     String?
+  riderType       String?
+  accessNeed      String?
+  gender          String?
   isAnonymous     Boolean  @default(true)
   reporterToken   String
   userId          String?
-  status          String   @default("submitted") // "submitted" | "under_review" | "acknowledged" | "resolved"
+  status          String   @default("submitted") // "submitted" | "under_review" | "assigned" | "in_progress" | "resolved" | "rejected"
+  assignedUnit    String?
+  statusNote      String?
+  updatedAt       DateTime @default(now()) @updatedAt
   syncStatus      String   @default("synced") // "synced" | "pending"
 
   line            Line?        @relation(fields: [lineId], references: [id])
@@ -34,8 +42,49 @@ model Report {
   category        Category     @relation(fields: [categoryId], references: [id])
   subcategory     Subcategory  @relation(fields: [subcategoryId], references: [id])
   user            User?        @relation(fields: [userId], references: [id])
+  events          ReportEvent[]
+  confirmations   ReportConfirmation[]
+  resolutionVotes ResolutionVote[]
 
+  @@index([stationId, subcategoryId, occurredAt])
+  @@index([reporterToken])
   @@map("reports")
+}
+
+model ReportEvent {
+  id           String   @id @default(uuid())
+  reportId     String
+  status       String
+  assignedUnit String?
+  note         String?
+  createdAt    DateTime @default(now())
+  report       Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("report_events")
+}
+
+model ReportConfirmation {
+  id            String   @id @default(uuid())
+  reportId      String
+  reporterToken String
+  createdAt     DateTime @default(now())
+  report        Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, reporterToken])
+  @@map("report_confirmations")
+}
+
+model ResolutionVote {
+  id            String   @id @default(uuid())
+  reportId      String
+  reporterToken String
+  resolved      Boolean
+  createdAt     DateTime @default(now())
+  report        Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, reporterToken])
+  @@map("resolution_votes")
 }
 
 model User {

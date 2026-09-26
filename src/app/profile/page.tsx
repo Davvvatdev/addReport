@@ -44,8 +44,10 @@ import {
   redeemCityService,
   saveCitizenProfile,
 } from '@/lib/gamification';
-import { toFa } from '@/lib/format';
+import { toFa, trackingCode } from '@/lib/format';
 import { db, OfflineReport } from '@/lib/db';
+import { getReporterToken } from '@/lib/client';
+import { statusCls, statusLabel } from '@/lib/report-meta';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<CitizenProfile | null>(null);
@@ -56,6 +58,9 @@ export default function ProfilePage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'rewards' | 'reports' | 'faq'>('rewards');
   const [myReports, setMyReports] = useState<OfflineReport[]>([]);
+  const [serverStatus, setServerStatus] = useState<Record<string, string>>({});
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [customName, setCustomName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('👋');
@@ -76,6 +81,13 @@ export default function ProfilePage() {
           const sortedItems = [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           const p = getCitizenProfile(sortedItems);
           setMyReports(sortedItems);
+          const ids = sortedItems.filter((r) => r.syncStatus === 'synced').map((r) => r.uuid).slice(0, 100);
+          if (ids.length) {
+            fetch(`/api/reports/status?ids=${ids.join(',')}`)
+              .then((res) => res.json())
+              .then((data) => setServerStatus(data.statuses ?? {}))
+              .catch(() => {});
+          }
           setProfile(p);
           setCustomName(p.name);
           setSelectedAvatar(p.avatar);
@@ -107,6 +119,25 @@ export default function ProfilePage() {
     } else {
       setRedeemError(res.message);
     }
+  }
+
+  async function deleteMyData() {
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reporterToken: getReporterToken() }),
+      });
+      if (!res.ok) throw new Error();
+      const { deleted } = await res.json();
+      await db.reports.clear();
+      setMyReports([]);
+      setServerStatus({});
+      setDeleteMsg(`${toFa(deleted)} گزارش از سامانه و از این گوشی حذف شد.`);
+    } catch {
+      setDeleteMsg('حذف انجام نشد. اتصال اینترنت را بررسی کنید و دوباره امتحان کنید.');
+    }
+    setConfirmDelete(false);
   }
 
   function handleCopy(code: string) {
@@ -368,6 +399,9 @@ export default function ProfilePage() {
         {/* محتوای تب ۱: کاتالوگ خدمات شهری و کدهای تخفیف */}
         {activeTab === 'rewards' && (
           <section className="space-y-4">
+            <Notice tone="warning" className="text-xs leading-6">
+              باشگاه شهروندی در نسخه آزمایشی است: سکه‌ها و کدهای جایزه نمایشی‌اند و هنوز در گیشه‌ها یا خدمات شهری قابل استفاده نیستند.
+            </Notice>
             {/* اگر کاربر ووچرهای فعال دارد */}
             {profile.redeemedVouchers.length > 0 && (
               <div className="rounded-3xl bg-amber-500/10 border border-amber-300/60 p-4">
@@ -508,14 +542,40 @@ export default function ProfilePage() {
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         +{toFa(50 + (r.photoData ? 25 : 0))} سکه
                       </span>
-                      <span className="text-[10px] font-medium text-slate-400">
-                        {r.syncStatus === 'synced' ? 'ارسال‌شده به سامانه' : 'در صف ارسال'}
-                      </span>
+                      {serverStatus[r.uuid] ? (
+                        <Link
+                          href={`/track?code=${trackingCode(r.uuid)}`}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-black underline-offset-2 hover:underline ${statusCls(serverStatus[r.uuid])}`}
+                        >
+                          {statusLabel(serverStatus[r.uuid])} ←
+                        </Link>
+                      ) : (
+                        <span className="text-[10px] font-medium text-slate-400">
+                          {r.syncStatus === 'synced' ? 'ارسال‌شده به سامانه' : r.syncStatus === 'failed' ? 'ارسال ناموفق' : 'در صف ارسال'}
+                        </span>
+                      )}
+                      <span dir="ltr" className="text-[10px] text-slate-400">{trackingCode(r.uuid)}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs leading-6 text-slate-600">
+              <p className="font-extrabold text-slate-900">حذف داده‌های من</p>
+              <p className="mt-1">همه گزارش‌هایی که با این گوشی ثبت کرده‌اید برای همیشه از سامانه و از همین گوشی پاک می‌شوند.</p>
+              {deleteMsg && <p className="mt-2 font-bold text-slate-800">{deleteMsg}</p>}
+              {confirmDelete ? (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button onClick={deleteMyData} className="btn btn-danger pressable min-h-11 text-xs">بله، همه را حذف کن</button>
+                  <button onClick={() => setConfirmDelete(false)} className="btn btn-neutral pressable min-h-11 text-xs">انصراف</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmDelete(true)} className="btn btn-neutral pressable mt-3 min-h-11 w-full text-xs text-rose-700">
+                  حذف همه گزارش‌های من
+                </button>
+              )}
+            </div>
           </section>
         )}
 
@@ -541,7 +601,7 @@ export default function ProfilePage() {
                 چگونه سکه‌ها را به خدمات شهری تبدیل کنیم؟
               </h4>
               <p className="text-xs text-slate-600 leading-6">
-                سکه‌های شما در این سامانه یک دارایی واقعی اجتماعی است. با رسیدن به سقف امتیاز هر خدمت (شارژ بلیت مترو، بلیت سینما، بن استخر و...) روی دکمه دریافت خدمت بزنید تا کد ووچر اختصاصی برای شما صادر شود. این کد را می‌توانید در گیشه‌های مترو یا وب‌سایت‌های خدمات شهری ارائه دهید.
+                با رسیدن به سقف امتیاز هر خدمت روی دکمه دریافت خدمت بزنید تا کد ووچر صادر شود. در نسخه آزمایشی این کدها نمایشی‌اند و هنوز در گیشه‌ها یا خدمات شهری پذیرفته نمی‌شوند.
               </p>
             </div>
 

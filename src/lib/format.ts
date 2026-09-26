@@ -30,3 +30,15 @@ export function normalizeFa(s: string): string {
     .trim()
     .toLowerCase();
 }
+
+/** زمان نسبی فارسی، مثل «۵ دقیقه پیش» */
+export function timeAgoFa(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const sec = Math.round((d.getTime() - Date.now()) / 1000);
+  const rtf = new Intl.RelativeTimeFormat('fa', { numeric: 'auto' });
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [['day', 86400], ['hour', 3600], ['minute', 60]];
+  for (const [unit, size] of units) {
+    if (Math.abs(sec) >= size) return rtf.format(Math.round(sec / size), unit);
+  }
+  return 'همین حالا';
+}

@@ -44,6 +44,21 @@ INSERT INTO subcategories VALUES('6-3','6','خرابی گیت یا دستگاه 
 INSERT INTO subcategories VALUES('6-4','6','عدم پذیرش کارت',TRUE,FALSE,0,NULL);
 INSERT INTO subcategories VALUES('7-1','7','سایر موارد',TRUE,FALSE,0,NULL);
 
+-- زیرمسئله‌های تکمیلی
+INSERT INTO "subcategories" ("id", "categoryId", "titleFa", "allowsPhoto", "isSensitive", "sortOrder", "icon") VALUES
+  ('2-6', '2', 'ازدحام روی سکو یا داخل ایستگاه', TRUE, FALSE, 6, NULL),
+  ('2-7', '2', 'رفتار نامناسب کارکنان یا راننده', FALSE, FALSE, 7, NULL),
+  ('3-9', '3', 'نقص مسیر انتقال بین مترو و اتوبوس', TRUE, FALSE, 9, NULL),
+  ('3-10', '3', 'مسیر انتقال باریک یا بیش از حد شلوغ', TRUE, FALSE, 10, NULL),
+  ('3-11', '3', 'بوی نامطبوع یا آلودگی محیطی', TRUE, FALSE, 11, NULL),
+  ('4-9', '4', 'آزار جنسیتی', FALSE, TRUE, 9, NULL),
+  ('4-10', '4', 'شرایط تهدیدکننده برای سالمندان، کودکان یا افراد آسیب‌پذیر', FALSE, TRUE, 10, NULL),
+  ('5-5', '5', 'اعلام مبهم یا ناقص علت تأخیر', FALSE, FALSE, 5, NULL),
+  ('5-6', '5', 'نبود اطلاعات درباره مسیر جایگزین', FALSE, FALSE, 6, NULL),
+  ('5-7', '5', 'نبود اطلاع‌رسانی در نقطه تبادل مترو و اتوبوس', TRUE, FALSE, 7, NULL)
+ON CONFLICT ("id") DO NOTHING;
+UPDATE "subcategories" SET "sortOrder" = CAST(split_part("id", '-', 2) AS INTEGER) WHERE "sortOrder" = 0;
+
 -- lines
 INSERT INTO lines VALUES('line-1','خط ۱ (تجریش - کهریزک)','metro','#E3000F');
 INSERT INTO lines VALUES('line-2','خط ۲ (صادقیه - فرهنگسرا)','metro','#0039A6');

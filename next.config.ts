@@ -9,6 +9,8 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // نشانگر توسعهٔ Next.js پایین-چپ روی دکمهٔ «ثبت گزارش» نوار شناور می‌افتاد
+  devIndicators: { position: 'top-left' },
   experimental: {
     cpus: 1,
   },

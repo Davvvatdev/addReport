@@ -1,11 +1,13 @@
+import { unlink } from 'node:fs/promises';
+import path from 'node:path';
 import { prisma } from '@/lib/prisma';
 import { trackingCode } from '@/lib/format';
 import { getSession } from '@/lib/session';
 import { MAX_DESCRIPTION, type SubmitResult } from '@/lib/types';
+import { ACCESS_NEEDS, GENDERS, IMPACTS, RIDER_TYPES, SEVERITIES, TRIP_PURPOSES, pick } from '@/lib/report-meta';
 
 const MODES = ['metro', 'bus', 'brt'];
 const CONTEXTS = ['in_station', 'on_vehicle', 'transfer_point'];
-const SEVERITIES = ['low', 'medium', 'high'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const HOURLY_LIMIT = 30;
 
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
   const severity = str(body.severity) ?? 'medium';
   if (!mode || !MODES.includes(mode)) return bad('invalid mode');
   if (!vehicleContext || !CONTEXTS.includes(vehicleContext)) return bad('invalid vehicleContext');
-  if (!SEVERITIES.includes(severity)) return bad('invalid severity');
+  if (!(SEVERITIES as readonly string[]).includes(severity)) return bad('invalid severity');
 
   const subcategory = await prisma.subcategory.findUnique({ where: { id: str(body.subcategoryId) ?? '' } });
   if (!subcategory || subcategory.categoryId !== body.categoryId) return bad('invalid category');
@@ -66,6 +68,7 @@ export async function POST(request: Request) {
   if (recent >= HOURLY_LIMIT) return bad('rate limit', 429);
 
   const description = str(body.description, MAX_DESCRIPTION)?.trim() || null;
+  const direction = str(body.direction, 60)?.trim() || null;
   const occurred = typeof body.occurredAt === 'string' ? new Date(body.occurredAt) : null;
   const occurredAt = occurred && !isNaN(+occurred) && +occurred <= Date.now() + 6e4 ? occurred : new Date();
 
@@ -84,16 +87,44 @@ export async function POST(request: Request) {
       vehicleContext,
       categoryId: subcategory.categoryId,
       subcategoryId: subcategory.id,
+      direction,
       description,
       severity,
+      impact: pick(IMPACTS, body.impact),
+      tripPurpose: pick(TRIP_PURPOSES, body.tripPurpose),
+      riderType: pick(RIDER_TYPES, body.riderType),
+      accessNeed: pick(ACCESS_NEEDS, body.accessNeed),
+      gender: pick(GENDERS, body.gender),
       lat,
       lng,
       occurredAt,
       isAnonymous: true,
       reporterToken,
       userId: session?.userId,
+      events: { create: { status: 'submitted' } },
     },
   });
 
   return Response.json(await buildResult(id), { status: 201 });
+}
+
+/** حق خروج داده‌ها: حذف همه گزارش‌های ثبت‌شده با شناسه این دستگاه */
+export async function DELETE(request: Request) {
+  const body = await request.json().catch(() => null);
+  const reporterToken = str(body?.reporterToken, 64);
+  if (!reporterToken || reporterToken.length < 8) return bad('invalid reporter token');
+
+  const reports = await prisma.report.findMany({ where: { reporterToken }, select: { photoUrl: true } });
+  await Promise.all(
+    reports
+      .filter((r) => r.photoUrl)
+      .map((r) => unlink(path.join(process.cwd(), 'public', 'uploads', path.basename(r.photoUrl!))).catch(() => {})),
+  );
+  const [deleted] = await prisma.$transaction([
+    prisma.report.deleteMany({ where: { reporterToken } }),
+    prisma.reportConfirmation.deleteMany({ where: { reporterToken } }),
+    prisma.resolutionVote.deleteMany({ where: { reporterToken } }),
+    prisma.feedback.deleteMany({ where: { reporterToken } }),
+  ]);
+  return Response.json({ deleted: deleted.count });
 }
