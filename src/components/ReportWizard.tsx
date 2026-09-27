@@ -635,7 +635,7 @@ export default function ReportWizard() {
             <p className="font-bold text-slate-900">{subcategory.titleFa}</p>
             <p className="text-slate-600">
               {station ? station.name : 'ایستگاه نامشخص'}
-              {line ? ` · ${line.name}` : ''} · {CONTEXTS.find((c) => c.id === context)?.label}
+              {line ? ` · ${line.name}` : ''}{direction ? ` · به سمت ${direction}` : ''} · {CONTEXTS.find((c) => c.id === context)?.label}
             </p>
           </div>
 
