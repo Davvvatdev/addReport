@@ -68,6 +68,7 @@ export async function POST(request: Request) {
   if (recent >= HOURLY_LIMIT) return bad('rate limit', 429);
 
   const description = str(body.description, MAX_DESCRIPTION)?.trim() || null;
+  if (subcategory.isOther && !description) return bad('description required');
   const direction = str(body.direction, 60)?.trim() || null;
   const occurred = typeof body.occurredAt === 'string' ? new Date(body.occurredAt) : null;
   const occurredAt = occurred && !isNaN(+occurred) && +occurred <= Date.now() + 6e4 ? occurred : new Date();

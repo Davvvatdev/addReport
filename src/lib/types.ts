@@ -9,6 +9,8 @@ export interface MetaSubcategory {
   titleFa: string;
   allowsPhoto: boolean;
   isSensitive: boolean;
+  isOther: boolean;
+  modes: Mode[];
 }
 export interface MetaCategory {
   id: string;

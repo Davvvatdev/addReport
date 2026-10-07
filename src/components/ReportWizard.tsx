@@ -144,11 +144,19 @@ export default function ReportWizard() {
     return best && best.km <= GEO_MAX_KM ? best : null;
   }, [meta, coords]);
 
-  const category = meta?.categories.find((c) => c.id === categoryId) ?? null;
+  // مسائل بر اساس وسیله‌ی انتخاب‌شده (مترو یا اتوبوس/بی‌آر‌تی) فیلتر می‌شوند
+  const categories = useMemo(
+    () => (meta?.categories ?? []).map((c) => ({
+      ...c,
+      subcategories: c.subcategories.filter((s) => !s.modes || s.modes.includes(mode)),
+    })).filter((c) => c.subcategories.length > 0),
+    [meta, mode],
+  );
+  const category = categories.find((c) => c.id === categoryId) ?? null;
   const subcategory = category?.subcategories.find((s) => s.id === subcategoryId) ?? null;
   const station = meta?.stations.find((s) => s.id === stationId) ?? null;
   const line = meta?.lines.find((l) => l.id === lineId) ?? null;
-  const isOther = categoryId === '7';
+  const isOther = !!subcategory?.isOther || categoryId === '7';
   const canPhoto = !!subcategory?.allowsPhoto && !subcategory.isSensitive;
 
   const modeLines = useMemo(() => meta?.lines.filter((l) => l.mode === mode) ?? [], [meta, mode]);
@@ -695,7 +703,7 @@ export default function ReportWizard() {
         <div className="flex flex-1 flex-col gap-3 p-4">
           {!category ? (
             <div className="grid grid-cols-2 gap-3">
-              {meta.categories.map((c) => {
+              {categories.map((c) => {
                 const Icon = CATEGORY_ICONS[c.id] ?? Pencil;
                 const style = CATEGORY_STYLES[c.id] ?? { bg: 'bg-white', border: 'border-slate-200', edge: '[--edge:#cbd5e1]', iconBg: 'bg-blue-50', iconColor: 'text-blue-600' };
                 return (
@@ -722,8 +730,11 @@ export default function ReportWizard() {
                 <li key={s.id}>
                   <button
                     onClick={() => { setSubcategoryId(s.id); setStep(3); }}
-                    className="pressable flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right font-bold"
+                    className={`pressable flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-right font-bold ${
+                      s.isOther ? 'border-dashed border-blue-300 bg-blue-50/60 text-blue-800' : 'border-slate-200 bg-white'
+                    }`}
                   >
+                    {s.isOther && <Pencil size={18} className="shrink-0" />}
                     <span className="flex-1 leading-6">{s.titleFa}</span>
                     {s.isSensitive && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs text-rose-700">ناشناس</span>}
                     <ChevronLeft size={18} className="shrink-0 text-slate-400" />
@@ -818,7 +829,7 @@ export default function ReportWizard() {
           </section>
 
           {isOther ? (
-            <DescriptionField value={description} onChange={setDescription} label="توضیح دهید" />
+            <DescriptionField value={description} onChange={setDescription} label={subcategory?.isOther && categoryId !== '7' ? 'مشکل را با کلمات خودتان بنویسید' : 'توضیح دهید'} />
           ) : (
             <details className="rounded-2xl border border-slate-200 bg-white">
               <summary className="min-h-12 cursor-pointer list-none px-4 py-3 text-sm font-medium text-slate-600">افزودن توضیح (اختیاری)</summary>

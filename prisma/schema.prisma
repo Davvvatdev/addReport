@@ -140,6 +140,8 @@ model Subcategory {
   isSensitive  Boolean  @default(false)
   sortOrder    Int      @default(0)
   icon         String?
+  isOther      Boolean  @default(false) // «خودم می‌نویسم» — توضیح متنی اجباری
+  modes        String   @default("metro,bus,brt") // وسیله‌هایی که این مورد برایشان نمایش داده می‌شود
   category     Category @relation(fields: [categoryId], references: [id])
   reports      Report[]
 

@@ -1,10 +1,10 @@
 -- categories
-INSERT INTO categories VALUES('1','مسائل زمانی 🕐',1,NULL);
-INSERT INTO categories VALUES('2','مسائل عملیاتی ⚙️',2,NULL);
-INSERT INTO categories VALUES('3','مسائل کالبدی و محیطی 🏗️',3,NULL);
-INSERT INTO categories VALUES('4','مسائل اجتماعی و امنیتی 🛡️',4,NULL);
-INSERT INTO categories VALUES('5','مسائل اطلاع‌رسانی 📢',5,NULL);
-INSERT INTO categories VALUES('6','مسائل کرایه و پرداخت 💳',6,NULL);
+INSERT INTO categories VALUES('1','تأخیر و زمان‌بندی 🕐',1,NULL);
+INSERT INTO categories VALUES('2','توقف و شلوغی ⚙️',2,NULL);
+INSERT INTO categories VALUES('3','ایستگاه و تجهیزات 🏗️',3,NULL);
+INSERT INTO categories VALUES('4','امنیت و آزار 🛡️',4,NULL);
+INSERT INTO categories VALUES('5','اطلاع‌رسانی و تابلوها 📢',5,NULL);
+INSERT INTO categories VALUES('6','بلیت و پرداخت 💳',6,NULL);
 INSERT INTO categories VALUES('7','سایر ✏️',7,NULL);
 
 -- subcategories
@@ -203,3 +203,6 @@ INSERT INTO stations VALUES('st-bulk-130','میدان قزوین','["brt-7"]',NU
 INSERT INTO stations VALUES('st-bulk-131','مولوی','["brt-7"]',NULL,NULL,FALSE);
 INSERT INTO stations VALUES('st-bulk-132','مختاری','["brt-7"]',NULL,NULL,FALSE);
 INSERT INTO stations VALUES('st-bulk-133','میدان راه‌آهن','["brt-7"]',NULL,NULL,TRUE);
+
+-- پس از این فایل، برای نام‌های ساده و زیرمسئله‌های اختصاصی مترو/اتوبوس اجرا کنید:
+--   prisma/migration_003.sql و سپس prisma/migration_004.sql

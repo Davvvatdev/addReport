@@ -25,6 +25,8 @@ export async function GET() {
         titleFa: s.titleFa,
         allowsPhoto: s.allowsPhoto,
         isSensitive: s.isSensitive,
+        isOther: s.isOther,
+        modes: s.modes.split(',').filter(Boolean) as Mode[],
       })),
     })),
     lines: lines.map((l) => ({ id: l.id, name: l.name, mode: l.mode as Mode, color: l.color })),
