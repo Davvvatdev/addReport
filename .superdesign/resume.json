@@ -1,6 +1,112 @@
 {
   "schemaVersion": 1,
   "targets": {
+    "/public/list": {
+      "targetKind": "existing-ui",
+      "projectId": "dd87be06-308d-4be3-be39-772a09e1ae6d",
+      "baselineDraftId": "8b6f77f0-6596-494c-9646-ec406c15217d",
+      "activeDraftId": "3829a3ad-c0f4-45b2-aac7-4468175c12a0",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [
+        "106b9684-fe05-4457-b60e-5b6a79362ff8"
+      ],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "src/app/globals.css",
+        "src/app/public/list/page.tsx",
+        "src/components/ui.tsx",
+        "src/components/BottomNav.tsx"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "3c1fc9fcb6ee8c8f887843c54a17bb1f81ae2259d7f976ad123fdf75d2af3925",
+        ".superdesign/init/theme.md": "2cbfd825d1bb5080a142e26831d22fc69a54a1f3e84e5b76a6977214c65f9698",
+        "src/app/globals.css": "39f89961a31e01006ee06449e4bfe2665e79397c3a1bdec03c076ec9a37007e3",
+        "src/app/public/list/page.tsx": "6a40fe3c1db645e0af8894bef7447bd4755aedf61cb9864bea1be0335167d7ef",
+        "src/components/ui.tsx": "e658e032651a9229f657e5c5952660e6e8a2f7beedff4577ca62f284124473bb",
+        "src/components/BottomNav.tsx": "954addf2f7581ecfff8be15bda074ef397b51345369913a36c784fbf00bfaaa4"
+      },
+      "drafts": {
+        "8b6f77f0-6596-494c-9646-ec406c15217d": {
+          "title": "گزارش‌های عمومی",
+          "visualDirection": "faithful current public reports baseline",
+          "currentVersion": 1
+        },
+        "cde4e851-92d3-4a4f-88a9-6fa9e3762fd4": {
+          "title": "گزارش‌های عمومی — نمایش فهرست بازطراحی‌شده",
+          "visualDirection": "cleaner mobile scanning filters and empty state",
+          "parentDraftId": "8b6f77f0-6596-494c-9646-ec406c15217d",
+          "currentVersion": 1
+        },
+        "3829a3ad-c0f4-45b2-aac7-4468175c12a0": {
+          "title": "گزارش‌های عمومی — فید عملیاتی",
+          "visualDirection": "compact operational feed with status summary",
+          "parentDraftId": "8b6f77f0-6596-494c-9646-ec406c15217d",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-10-07T00:00:00.000Z"
+    },
+    "/report": {
+      "targetKind": "existing-ui",
+      "projectId": "53a2e1e9-a1e0-4504-823b-2d234e9d0147",
+      "baselineDraftId": "e2ae2c1b-1a98-496e-a57d-7fa91c5b6d4c",
+      "activeDraftId": "4d11e2ce-9a01-44e3-8c44-d870907d06a6",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [
+        "f774d7c6-966e-4d45-bf53-96ebcb9748be"
+      ],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "src/app/globals.css",
+        "src/app/report/page.tsx",
+        "src/components/ReportWizard.tsx",
+        "src/components/ui.tsx",
+        "src/components/BottomNav.tsx"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "3c1fc9fcb6ee8c8f887843c54a17bb1f81ae2259d7f976ad123fdf75d2af3925",
+        ".superdesign/init/theme.md": "2cbfd825d1bb5080a142e26831d22fc69a54a1f3e84e5b76a6977214c65f9698",
+        "src/app/globals.css": "39f89961a31e01006ee06449e4bfe2665e79397c3a1bdec03c076ec9a37007e3",
+        "src/app/report/page.tsx": "5142350331af8c5317060c5482ee42cbaa0dadd4e5e439d07797f090c20a55a2",
+        "src/components/ReportWizard.tsx": "4c94363fdb0f38ea060fc56436d96959a02ad904fe70a0e9833de22667d48c4c",
+        "src/components/ui.tsx": "e658e032651a9229f657e5c5952660e6e8a2f7beedff4577ca62f284124473bb",
+        "src/components/BottomNav.tsx": "954addf2f7581ecfff8be15bda074ef397b51345369913a36c784fbf00bfaaa4"
+      },
+      "drafts": {
+        "e2ae2c1b-1a98-496e-a57d-7fa91c5b6d4c": {
+          "title": "ثبت گزارش — انتخاب مسیر",
+          "visualDirection": "faithful current route-selection baseline",
+          "currentVersion": 1
+        },
+        "f53970bf-ebb4-4d48-96c1-77fa56954df9": {
+          "title": "ثبت گزارش — انتخاب مسیر",
+          "visualDirection": "compact guided checklist route selection",
+          "parentDraftId": "e2ae2c1b-1a98-496e-a57d-7fa91c5b6d4c",
+          "currentVersion": 1
+        },
+        "cddd83d7-0ec8-46d9-996e-026c5771d009": {
+          "title": "ثبت گزارش — انتخاب خط",
+          "visualDirection": "transit-board line selection with embedded station search",
+          "parentDraftId": "e2ae2c1b-1a98-496e-a57d-7fa91c5b6d4c",
+          "currentVersion": 1
+        },
+        "4d11e2ce-9a01-44e3-8c44-d870907d06a6": {
+          "title": "ثبت گزارش — انتخاب مسیر",
+          "visualDirection": "clear wizard header with labeled progress rail and returnable steps",
+          "parentDraftId": "cddd83d7-0ec8-46d9-996e-026c5771d009",
+          "currentVersion": 1
+        },
+        "be5e976f-116e-4caf-972d-2d8d3f604abc": {
+          "title": "ثبت گزارش — انتخاب خط با گام‌نما",
+          "visualDirection": "reviewable stepper with editable summary chips for completed stages",
+          "parentDraftId": "cddd83d7-0ec8-46d9-996e-026c5771d009",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-10-07T00:00:00.000Z"
+    },
     "/profile": {
       "targetKind": "existing-ui",
       "projectId": "19280acc-8743-4697-aaa7-d7d0c46f9dc6",

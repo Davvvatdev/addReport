@@ -11,6 +11,7 @@ export function AppHeader({
   icon: Icon,
   action,
   dark = false,
+  hideBack = false,
 }: {
   title: string;
   eyebrow?: string;
@@ -18,17 +19,20 @@ export function AppHeader({
   icon?: Icon;
   action?: ReactNode;
   dark?: boolean;
+  hideBack?: boolean;
 }) {
   return (
     <header className={`sticky top-0 z-20 border-b px-4 py-3 backdrop-blur ${dark ? 'border-slate-800 bg-slate-950/95 text-white' : 'border-slate-200 bg-white/90 text-slate-950'}`}>
       <div className="mx-auto flex w-full max-w-6xl items-center gap-3">
-        <Link
-          href={backHref}
-          aria-label="بازگشت"
-          className={`tap flex w-11 shrink-0 items-center justify-center rounded-2xl transition ${dark ? 'text-slate-200 active:bg-white/10' : 'text-slate-600 active:bg-slate-100'}`}
-        >
-          <ArrowRight size={21} />
-        </Link>
+        {!hideBack && (
+          <Link
+            href={backHref}
+            aria-label="بازگشت"
+            className={`tap flex w-11 shrink-0 items-center justify-center rounded-2xl transition ${dark ? 'text-slate-200 active:bg-white/10' : 'text-slate-600 active:bg-slate-100'}`}
+          >
+            <ArrowRight size={21} />
+          </Link>
+        )}
         {Icon && (
           <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${dark ? 'bg-blue-500/15 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
             <Icon size={20} />

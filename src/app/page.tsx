@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BarChart3, ChevronLeft, CloudOff, FileText, Map, Plus } from 'lucide-react';
+import { BarChart3, ChevronLeft, CloudOff, FileText, Plus } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { timeAgoFa, toFa } from '@/lib/format';
 import { Notice } from '@/components/ui';
@@ -131,9 +131,8 @@ export default async function Home() {
               بدون نیاز به ورود
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5">
             <ToolTile href="/public/list" icon={FileText} title="فهرست" desc="فیلتر خط و ایستگاه" tone="bg-blue-50 text-blue-700" />
-            <ToolTile href="/public/map" icon={Map} title="نقشه" desc="خوشه‌های ایستگاهی" tone="bg-violet-50 text-violet-700" />
             <ToolTile href="/public/stats" icon={BarChart3} title="داده باز" desc="نمودار، CSV، JSON" tone="bg-teal-50 text-teal-700" />
           </div>
         </section>

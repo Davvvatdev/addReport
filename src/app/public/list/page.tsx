@@ -78,6 +78,7 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
         title="گزارش‌های عمومی"
         eyebrow={`${toFa(total)} مورد غیرحساس`}
         icon={FileText}
+        hideBack
         action={<Link href="/public/stats" className="btn btn-secondary pressable rounded-xl px-3 py-2 text-xs">داده باز</Link>}
       />
 

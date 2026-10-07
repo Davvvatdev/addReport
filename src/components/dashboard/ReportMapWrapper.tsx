@@ -1,9 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import type { MapReport } from './MapComponent';
+import type { MapReport } from './ReportMapComponent';
 
-const MapComponent = dynamic(() => import('./MapComponent'), { 
+const MapComponent = dynamic(() => import('./ReportMapComponent'), { 
   ssr: false,
   loading: () => (
     <div className="h-full w-full bg-slate-100 animate-pulse flex items-center justify-center text-slate-500 font-medium">

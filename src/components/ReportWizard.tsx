@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Camera, Check, ChevronLeft, Clock, CreditCard, Cog, Construction, Gift, Home, Loader2,
-  MapPin, Megaphone, Pencil, Phone, Search, ShieldAlert, ShieldCheck, Sparkles, Train, Bus, TramFront, Trophy, X,
+  MapPin, Megaphone, Pencil, Phone, Search, ShieldAlert, ShieldCheck, Sparkles, Train, TramFront, Trophy, X,
   ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
@@ -37,7 +37,6 @@ const CATEGORY_STYLES: Record<string, { bg: string; border: string; edge: string
 };
 const MODES: { id: Mode; label: string; icon: LucideIcon }[] = [
   { id: 'metro', label: 'مترو', icon: Train },
-  { id: 'bus', label: 'اتوبوس', icon: Bus },
   { id: 'brt', label: 'بی‌آر‌تی', icon: TramFront },
 ];
 const CONTEXTS: { id: VehicleContext; label: string }[] = [
@@ -167,9 +166,17 @@ export default function ReportWizard() {
         (!lineId || s.lineIds.includes(lineId)) &&
         (!q || normalizeFa(s.name).includes(q)),
     );
-    if (coords) {
+    // فقط زمانی بر اساس فاصله مرتب شود که خط خاصی انتخاب نشده و جستجو انجام نشده است
+    if (coords && !lineId && !q) {
       const d = (s: MetaStation) => (s.lat != null && s.lng != null ? distanceKm(coords.lat, coords.lng, s.lat, s.lng) : 1e9);
       list = [...list].sort((a, b) => d(a) - d(b));
+    } else if (lineId && !q) {
+      // Sort strictly by the station's position in this specific line
+      list = [...list].sort((a, b) => {
+        const orderA = a.lineOrders?.[lineId] ?? 999;
+        const orderB = b.lineOrders?.[lineId] ?? 999;
+        return orderA - orderB;
+      });
     }
     return list;
   }, [meta, modeLines, lineId, query, coords]);
@@ -410,22 +417,72 @@ export default function ReportWizard() {
   }
 
   const progress = step === 1 ? 33 : step === 2 ? 66 : 100;
+  const stepTitle = step === 1 ? 'کجا هستید؟' : step === 2 ? (category ? clean(category.titleFa) : 'چه مشکلی؟') : 'جزئیات';
+  const wizardSteps = [
+    { id: 1, label: 'موقعیت' },
+    { id: 2, label: 'مشکل' },
+    { id: 3, label: 'جزئیات' },
+  ] as const;
+
+  function goToStep(target: 1 | 2 | 3) {
+    if (submitting || target >= step) return;
+    setError(null);
+    setStep(target);
+  }
 
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="flex items-center gap-2 px-3 py-2">
+        <div className="flex min-h-14 items-center gap-2 px-3 py-1.5">
           {step > 1 && !submitting ? (
-            <button onClick={back} aria-label="بازگشت" className="flex h-11 w-11 items-center justify-center rounded-2xl active:bg-slate-100"><ArrowRight size={22} /></button>
+            <button onClick={back} aria-label="بازگشت" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 active:bg-slate-100"><ArrowRight size={22} /></button>
           ) : (
-            <div className="w-11" /> /* Spacer to keep title centered if needed, or just nothing */
+            <span className="h-11 w-11 shrink-0" aria-hidden />
           )}
-          <h1 className="flex-1 text-lg font-bold">
-            {step === 1 ? 'کجا هستید؟' : step === 2 ? (category ? clean(category.titleFa) : 'چه مشکلی؟') : 'جزئیات'}
-          </h1>
-          <span className="pl-2 text-sm text-slate-500">مرحله {toFa(step)} از {toFa(3)}</span>
+          <div className="min-w-0 flex-1 text-center">
+            <h1 className="truncate text-lg font-extrabold leading-6">{stepTitle}</h1>
+            <p className="text-xs font-medium text-slate-500">مرحله {toFa(step)} از {toFa(3)}</p>
+          </div>
+          <span className="w-11 shrink-0" aria-hidden />
         </div>
-        <div className="h-1 bg-slate-100"><div className="h-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} /></div>
+        <div className="border-t border-slate-100 bg-white px-4 py-2.5">
+          <div className="relative grid grid-cols-3 gap-2" aria-label="مراحل ثبت گزارش">
+            <span className="absolute inset-x-[12%] top-3 h-0.5 bg-slate-200" aria-hidden />
+            <span className="absolute right-[12%] top-3 h-0.5 bg-blue-600 transition-all" style={{ width: `${Math.max(0, progress - 33)}%` }} aria-hidden />
+            {wizardSteps.map((item) => {
+              const active = step === item.id;
+              const completed = step > item.id;
+              const canReturn = completed && !submitting;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => goToStep(item.id)}
+                  disabled={!canReturn && !active}
+                  aria-current={active ? 'step' : undefined}
+                  className={`relative z-10 flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-extrabold transition ${
+                    active
+                      ? 'text-blue-700'
+                      : completed
+                        ? 'text-slate-700 active:bg-slate-100'
+                        : 'text-slate-300'
+                  }`}
+                >
+                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
+                    active
+                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
+                      : completed
+                        ? 'border border-blue-200 bg-blue-50 text-blue-700'
+                        : 'border border-slate-200 bg-slate-50 text-slate-400'
+                  }`}>
+                    {completed ? <Check size={13} strokeWidth={3} aria-hidden /> : toFa(item.id)}
+                  </span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="notice notice-info items-center justify-between rounded-none border-b border-blue-100 px-4 py-1.5 text-[11px] font-bold">
           <span className="flex items-center gap-1.5">
             <Sparkles size={13} className="text-amber-500 shrink-0" />
@@ -454,20 +511,24 @@ export default function ReportWizard() {
             </button>
           )}
 
-          <section>
-            <div className="grid grid-cols-3 gap-2">
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-black text-slate-800">نوع مسیر</p>
+              <span className="text-xs text-slate-500">یک گزینه را انتخاب کنید</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-200/50">
               {MODES.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => { setMode(id); setLineId(null); setStationId(null); setQuery(''); setDirection(null); }}
                   aria-pressed={mode === id}
-                  className={`pressable flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-2xl border text-xs font-black ${
+                  className={`pressable flex min-h-12 items-center justify-center gap-2 rounded-xl border text-sm font-black transition ${
                     mode === id
-                      ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20 [--edge:#1e40af]'
+                      : 'border-transparent bg-transparent text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <Icon size={22} />
+                  <Icon size={20} />
                   <span>{label}</span>
                 </button>
               ))}
@@ -475,75 +536,114 @@ export default function ReportWizard() {
           </section>
 
           {modeLines.length > 0 && (
-            <section className="flex flex-wrap gap-2">
-              {modeLines.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => { setLineId(lineId === l.id ? null : l.id); setStationId(null); setDirection(null); }}
-                  aria-pressed={lineId === l.id}
-                  className={`pressable flex min-h-11 items-center gap-2 rounded-2xl border px-3.5 text-xs font-black ${
-                    lineId === l.id
-                      ? 'border-slate-900 bg-slate-900 text-white [--edge:#000]'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className="h-3 w-3 rounded-full shrink-0 shadow-sm" style={{ background: l.color ?? '#94a3b8' }} />
-                  <span>{l.name}</span>
-                </button>
-              ))}
+            <section className="space-y-2">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-slate-800">خط را انتخاب کنید</p>
+                  <p className="mt-1 text-xs text-slate-500">خط نزدیک به مسیرتان را بزنید</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-600">
+                  {MODES.find((m) => m.id === mode)?.label}
+                </span>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/40">
+                <div className="max-h-52 divide-y divide-slate-100 overflow-y-auto">
+                  {modeLines.map((l) => {
+                    const active = lineId === l.id;
+                    const stops = lineTermini(l.name);
+                    return (
+                      <button
+                        key={l.id}
+                        title={l.name}
+                        onClick={() => { setLineId(active ? null : l.id); setStationId(null); setDirection(null); }}
+                        aria-pressed={active}
+                        className={`pressable flex min-h-12 w-full items-center gap-3 px-3 text-right text-xs font-bold transition ${
+                          active ? 'bg-blue-50 text-blue-800 [--edge:#1e40af]' : 'bg-white text-slate-800 [--edge:#cbd5e1] hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="h-3 w-3 shrink-0 rounded-full shadow-sm ring-2 ring-white" style={{ background: l.color ?? '#94a3b8' }} />
+                        <span className="min-w-0 flex-1 truncate">
+                          {stops.length === 2 ? (
+                            <>
+                              {l.name.split(/\s+/).slice(0, 2).join(' ')}
+                              <span className={`font-normal ${active ? 'text-blue-700' : 'text-slate-500'}`}> {stops[0]} تا {stops[1]}</span>
+                            </>
+                          ) : (
+                            l.name
+                          )}
+                        </span>
+                        {active ? <Check size={16} className="shrink-0 text-blue-700" aria-hidden /> : <ChevronLeft size={16} className="shrink-0 text-slate-400" aria-hidden />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className={`border-t p-3 ${lineId ? 'border-blue-100 bg-blue-50/60' : 'border-slate-100 bg-slate-50'}`}>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="truncate text-xs font-black text-slate-700">
+                      {line ? `ایستگاه ${line.name.split(/\s+/).slice(0, 2).join(' ')}` : 'ایستگاه را پیدا کنید'}
+                    </p>
+                    {lineId && (
+                      <button
+                        type="button"
+                        onClick={() => { setLineId(null); setStationId(null); setDirection(null); setQuery(''); }}
+                        className="shrink-0 text-xs font-bold text-blue-700 underline underline-offset-4"
+                      >
+                        پاک کردن
+                      </button>
+                    )}
+                  </div>
+                  <label className="relative block">
+                    <Search size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="جستجوی ایستگاه…"
+                      className="min-h-12 w-full rounded-xl border border-slate-200 bg-white pr-10 pl-3 text-base outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    />
+                  </label>
+                  <ul className="mt-2 max-h-52 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200 bg-white">
+                    {stationList.map((s) => (
+                      <li key={s.id}>
+                        <button
+                          onClick={() => pickStation(stationId === s.id ? null : s)}
+                          aria-pressed={stationId === s.id}
+                          className={`flex min-h-11 w-full items-center justify-between gap-3 px-3 text-right text-sm ${stationId === s.id ? 'bg-blue-50 font-bold text-blue-700' : 'text-slate-700'}`}
+                        >
+                          <span className="min-w-0 truncate">
+                            {s.name}
+                            {s.isInterchange && <span className="mr-2 text-xs text-slate-400">تبادلی</span>}
+                            {!lineId && query && <span className="mr-2 text-[10px] text-blue-600 bg-blue-50 px-2 py-1 rounded-full">{meta.lines.filter(l => s.lineIds.includes(l.id)).map(l => l.name).join('، ')}</span>}
+                          </span>
+                          {stationId === s.id && <Check size={18} className="shrink-0" />}
+                        </button>
+                      </li>
+                    ))}
+                    {stationList.length === 0 && (
+                      <li className="p-4 text-center text-sm text-slate-500">
+                        {!lineId && !query ? 'لطفاً یک خط را انتخاب کنید یا نام ایستگاه را جستجو کنید.' : 'ایستگاهی پیدا نشد'}
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
             </section>
           )}
 
-          {modeLines.length > 0 ? (
-            <section className="space-y-2">
-              <label className="relative block">
-                <Search size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="جستجوی ایستگاه…"
-                  className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white pr-10 pl-3 text-base outline-none focus:border-blue-500"
-                />
-              </label>
-              <ul className="max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-                {stationList.map((s) => (
-                  <li key={s.id}>
-                    <button
-                      onClick={() => pickStation(stationId === s.id ? null : s)}
-                      aria-pressed={stationId === s.id}
-                      className={`flex min-h-12 w-full items-center justify-between px-4 text-right ${stationId === s.id ? 'bg-blue-50 font-bold text-blue-700' : ''}`}
-                    >
-                      <span>
-                        {s.name}
-                        {s.isInterchange && <span className="mr-2 text-xs text-slate-400">تبادلی</span>}
-                        {!lineId && query && <span className="mr-2 text-[10px] text-blue-600 bg-blue-50 px-2 py-1 rounded-full">{meta.lines.filter(l => s.lineIds.includes(l.id)).map(l => l.name).join('، ')}</span>}
-                      </span>
-                      {stationId === s.id && <Check size={18} />}
-                    </button>
-                  </li>
-                ))}
-                {stationList.length === 0 && (
-                  <li className="p-4 text-center text-sm text-slate-500">
-                    {!lineId && !query ? 'لطفاً یک خط را انتخاب کنید یا نام ایستگاه را جستجو کنید.' : 'ایستگاهی پیدا نشد'}
-                  </li>
-                )}
-              </ul>
-            </section>
-          ) : (
+          {modeLines.length === 0 && (
             <Notice tone="neutral" className="text-sm">
-              فهرست خطوط و ایستگاه‌های اتوبوس هنوز اضافه نشده؛ می‌توانید رد شوید و مشکل را ثبت کنید.
+              فهرست خطوط و ایستگاه‌های این گزینه هنوز اضافه نشده؛ می‌توانید رد شوید و مشکل را ثبت کنید.
             </Notice>
           )}
 
-          <section>
-            <p className="mb-2 text-sm font-medium text-slate-600">کجای مسیر؟</p>
+          <section className="space-y-2">
+            <p className="text-sm font-medium text-slate-600">کجای مسیر؟</p>
             <div className="grid grid-cols-3 gap-2">
               {CONTEXTS.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => setContext(c.id)}
                   aria-pressed={context === c.id}
-                  className={`pressable min-h-12 rounded-2xl border text-sm font-bold ${context === c.id ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]' : 'border-slate-200 bg-white text-slate-700'}`}
+                  className={`pressable min-h-12 rounded-xl border text-sm font-bold ${context === c.id ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]' : 'border-slate-200 bg-white text-slate-700 [--edge:#cbd5e1]'}`}
                 >
                   {c.label}
                 </button>
@@ -560,7 +660,7 @@ export default function ReportWizard() {
                     key={t}
                     onClick={() => setDirection(direction === t ? null : t)}
                     aria-pressed={direction === t}
-                    className={`pressable min-h-12 rounded-2xl border px-2 text-sm font-bold ${direction === t ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]' : 'border-slate-200 bg-white text-slate-700'}`}
+                    className={`pressable min-h-12 rounded-xl border px-2 text-sm font-bold ${direction === t ? 'border-blue-600 bg-blue-600 text-white [--edge:#1e40af]' : 'border-slate-200 bg-white text-slate-700 [--edge:#cbd5e1]'}`}
                   >
                     به سمت {t}
                   </button>
@@ -569,16 +669,23 @@ export default function ReportWizard() {
             </section>
           )}
 
-          <div className="mt-auto flex gap-3 pt-2">
-            <button
-              onClick={() => { setStationId(null); setLineId(null); setDirection(null); setStep(2); }}
-              className="btn btn-neutral pressable min-h-14 flex-1"
-            >
-              نمی‌دانم / رد کردن
-            </button>
-            <button onClick={() => setStep(2)} disabled={!stationId} className="btn btn-primary pressable min-h-14 flex-[1.4]">
-              ادامه
-            </button>
+          <div className="mt-auto space-y-2 pt-2">
+            {!stationId && (
+              <Notice tone="warning" className="text-xs leading-6">
+                اگر نمی‌دانید در کدام ایستگاه هستید، از «نمی‌دانم / رد کردن» استفاده کنید.
+              </Notice>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setStationId(null); setLineId(null); setDirection(null); setStep(2); }}
+                className="btn btn-neutral pressable min-h-14 flex-1"
+              >
+                نمی‌دانم / رد کردن
+              </button>
+              <button onClick={() => setStep(2)} disabled={!stationId} className="btn btn-primary pressable min-h-14 flex-[1.4]">
+                ادامه
+              </button>
+            </div>
           </div>
         </div>
       )}

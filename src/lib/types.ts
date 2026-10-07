@@ -25,6 +25,7 @@ export interface MetaStation {
   id: string;
   name: string;
   lineIds: string[];
+  lineOrders: Record<string, number>;
   lat: number | null;
   lng: number | null;
   isInterchange: boolean;

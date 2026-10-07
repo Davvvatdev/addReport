@@ -114,6 +114,8 @@ model Station {
   lat           Float?
   lng           Float?
   isInterchange Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  lineOrders    String   @default("{}")
   reports       Report[]
 
   @@map("stations")

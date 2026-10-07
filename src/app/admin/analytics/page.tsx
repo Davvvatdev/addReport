@@ -6,7 +6,7 @@ import { toFa } from '@/lib/format';
 import { GENDERS, KPI_GROUPS } from '@/lib/report-meta';
 import { AppHeader, Notice, Surface } from '@/components/ui';
 import StatsChart from '@/app/public/stats/StatsChart';
-import MapWrapper from '@/app/public/map/MapWrapper';
+import MapWrapper from '@/components/dashboard/ReportMapWrapper';
 
 export const dynamic = 'force-dynamic';
 

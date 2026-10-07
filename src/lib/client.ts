@@ -28,7 +28,7 @@ const META_KEY = 'meta_v1';
 /** دسته‌ها/خطوط/ایستگاه‌ها: از شبکه، و در نبود آن از آخرین نسخه ذخیره‌شده */
 export async function loadMeta(): Promise<Meta | null> {
   try {
-    const res = await fetch('/api/meta');
+    const res = await fetch(`/api/meta?_t=${Date.now()}`);
     if (res.ok) {
       const meta: Meta = await res.json();
       safe(() => localStorage.setItem(META_KEY, JSON.stringify(meta)), undefined);
