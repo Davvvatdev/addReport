@@ -59,7 +59,7 @@ export default async function Home() {
             چه چیزی درست کار نمی‌کرد؟
           </h1>
           <p className="relative mt-2 text-sm leading-7 text-slate-300">
-            کمتر از ۳۰ ثانیه، بدون نام — حتی وقتی اینترنت ندارید.
+            چند ضربه، بدون نام — حتی وقتی اینترنت ندارید.
           </p>
 
           <Link

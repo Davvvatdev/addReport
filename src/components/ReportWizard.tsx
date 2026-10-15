@@ -20,7 +20,7 @@ import {
 } from '@/lib/types';
 import { awardPointsForReport, Badge } from '@/lib/gamification';
 import { Notice } from '@/components/ui';
-import { ACCESS_NEEDS, GENDERS, IMPACTS, RIDER_TYPES, TRIP_PURPOSES, lineTermini, type Impact } from '@/lib/report-meta';
+import { ACCESS_NEEDS, GENDERS, IMPACTS, RIDER_TYPES, SEVERITY_HINT, TRIP_PURPOSES, lineTermini, statusLabel, type Impact } from '@/lib/report-meta';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   '1': Clock, '2': Cog, '3': Construction, '4': ShieldAlert, '5': Megaphone, '6': CreditCard, '7': Pencil,
@@ -81,7 +81,9 @@ interface Done {
   };
 }
 
-export default function ReportWizard() {
+interface SimilarInfo { count: number; id: string; confirmations: number; createdAt: string; status: string }
+
+export default function ReportWizard({ initialStation, initialLine }: { initialStation?: string; initialLine?: string }) {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [metaFailed, setMetaFailed] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -111,6 +113,11 @@ export default function ReportWizard() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const deepLinkApplied = useRef(false);
+
+  const [similar, setSimilar] = useState<SimilarInfo | null>(null);
+  const [similarDismissed, setSimilarDismissed] = useState(false);
+  const [similarState, setSimilarState] = useState<'idle' | 'busy' | 'confirmed'>('idle');
 
   useEffect(() => {
     // خواندن localStorage فقط سمت کلاینت ممکن است (بدون mismatch در hydration)
@@ -132,6 +139,62 @@ export default function ReportWizard() {
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
     );
   }, []);
+
+  // لینک/QR ایستگاه: /report?station=…&line=… خط و ایستگاه را از پیش انتخاب می‌کند
+  useEffect(() => {
+    if (!meta || !initialStation || deepLinkApplied.current) return;
+    deepLinkApplied.current = true;
+    const st = meta.stations.find((s) => s.id === initialStation);
+    if (!st) return;
+    const ln =
+      meta.lines.find((l) => l.id === initialLine && st.lineIds.includes(l.id)) ??
+      meta.lines.find((l) => st.lineIds.includes(l.id));
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (ln) {
+      setMode(ln.mode === 'bus' ? 'brt' : ln.mode);
+      setLineId(ln.id);
+    }
+    setStationId(st.id);
+    if (ln && (initialLine || st.lineIds.length === 1)) setStep(2);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [meta, initialStation, initialLine]);
+
+  // پیش از ثبت: اگر همین مشکل اخیراً در همین ایستگاه گزارش شده، پیشنهاد تأیید می‌دهیم
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setSimilar(null);
+    setSimilarDismissed(false);
+    setSimilarState('idle');
+    /* eslint-enable react-hooks/set-state-in-effect */
+    if (step !== 3 || !stationId || !subcategoryId) return;
+    const ctrl = new AbortController();
+    const qs = new URLSearchParams({ stationId, subcategoryId, reporterToken: getReporterToken() });
+    fetch(`/api/reports/similar?${qs}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && d.count > 0 && d.reports?.[0]) {
+          const r = d.reports[0];
+          setSimilar({ count: d.count, id: r.id, confirmations: r.confirmations, createdAt: r.createdAt, status: r.status });
+        }
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [step, stationId, subcategoryId]);
+
+  async function confirmSimilar() {
+    if (!similar) return;
+    setSimilarState('busy');
+    try {
+      const res = await fetch(`/api/reports/${similar.id}/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reporterToken: getReporterToken() }),
+      });
+      setSimilarState(res.ok ? 'confirmed' : 'idle');
+    } catch {
+      setSimilarState('idle');
+    }
+  }
 
   const nearest = useMemo(() => {
     if (!meta || !coords) return null;
@@ -317,6 +380,29 @@ export default function ReportWizard() {
         ) : (
           <Loader2 className="animate-spin" />
         )}
+      </div>
+    );
+  }
+
+  /* ───────────── تأیید گزارش موجود به‌جای ثبت تکراری ───────────── */
+  if (step === 3 && similarState === 'confirmed' && similar) {
+    return (
+      <div className="flex flex-1 flex-col gap-5 p-5 pt-10 text-center">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+          <Check size={44} strokeWidth={3} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold">تأیید شما ثبت شد</h1>
+          <p className="mt-2 text-sm leading-7 text-slate-600">
+            همین مشکل قبلاً گزارش شده بود؛ تأیید شما اولویت آن را بالاتر می‌برد و نیازی به گزارش تکراری نیست.
+          </p>
+        </div>
+        <div className="mt-2 flex flex-col gap-3">
+          <Link href={`/track?code=${trackingCode(similar.id)}`} className="btn btn-dark pressable min-h-14">
+            پیگیری وضعیت این گزارش
+          </Link>
+          <button onClick={reset} className="btn btn-primary pressable min-h-14">ثبت گزارش دیگر</button>
+        </div>
       </div>
     );
   }
@@ -757,6 +843,38 @@ export default function ReportWizard() {
             </p>
           </div>
 
+          {similar && !similarDismissed && !subcategory.isSensitive && (
+            <section className="space-y-3 rounded-2xl border-2 border-blue-200 bg-blue-50/70 p-4">
+              <p className="text-sm font-black leading-7 text-blue-900">
+                این مشکل اخیراً در همین ایستگاه گزارش شده است
+                {similar.count > 1 ? ` (${toFa(similar.count)} گزارش باز)` : ''}.
+              </p>
+              <p className="text-xs leading-6 text-blue-800">
+                وضعیت: {statusLabel(similar.status)}
+                {similar.confirmations > 0 ? ` · ${toFa(similar.confirmations)} نفر دیگر هم دیده‌اند` : ''}.
+                اگر همان مشکل را دیده‌اید، تأیید کنید تا گزارش‌ها پراکنده نشوند.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={confirmSimilar}
+                  disabled={similarState === 'busy'}
+                  className="btn btn-primary pressable min-h-12 gap-1.5 text-sm"
+                >
+                  {similarState === 'busy' ? <Loader2 size={16} className="animate-spin" /> : null}
+                  من هم دیدم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimilarDismissed(true)}
+                  className="btn btn-neutral pressable min-h-12 text-sm"
+                >
+                  مشکل من فرق دارد
+                </button>
+              </div>
+            </section>
+          )}
+
           {subcategory.isSensitive && (
             <Notice tone="danger" icon={ShieldCheck} className="text-sm">
               این گزارش کاملاً ناشناس است. عکس گرفته نمی‌شود و در نمای عمومی فقط به‌صورت آمار تجمیعی دیده می‌شود.
@@ -808,6 +926,7 @@ export default function ReportWizard() {
                 </button>
               ))}
             </div>
+            <p className="mt-2 text-xs leading-6 text-slate-500">{SEVERITY_HINT[severity]}</p>
           </section>
 
           <section>

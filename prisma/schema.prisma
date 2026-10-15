@@ -35,6 +35,7 @@ model Report {
   assignedUnit    String?
   statusNote      String?
   updatedAt       DateTime @default(now()) @updatedAt
+  isSynthetic Boolean @default(false) // داده‌ی شبیه‌سازی‌شده
   syncStatus      String   @default("synced") // "synced" | "pending"
 
   line            Line?        @relation(fields: [lineId], references: [id])
@@ -57,6 +58,7 @@ model ReportEvent {
   status       String
   assignedUnit String?
   note         String?
+  isSynthetic Boolean @default(false) // داده‌ی شبیه‌سازی‌شده
   createdAt    DateTime @default(now())
   report       Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
@@ -68,6 +70,7 @@ model ReportConfirmation {
   id            String   @id @default(uuid())
   reportId      String
   reporterToken String
+  isSynthetic Boolean @default(false) // داده‌ی شبیه‌سازی‌شده
   createdAt     DateTime @default(now())
   report        Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
@@ -80,6 +83,7 @@ model ResolutionVote {
   reportId      String
   reporterToken String
   resolved      Boolean
+  isSynthetic Boolean @default(false) // داده‌ی شبیه‌سازی‌شده
   createdAt     DateTime @default(now())
   report        Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
@@ -150,6 +154,7 @@ model Subcategory {
 
 model Feedback {
   id            String   @id @default(uuid())
+  isSynthetic Boolean @default(false) // داده‌ی شبیه‌سازی‌شده
   createdAt     DateTime @default(now())
   susScores     String   // JSON string
   freeComment   String?

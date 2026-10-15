@@ -1,16 +1,27 @@
 import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
-import { BarChart3, Clock3, Download, FileJson, Table, TrendingUp } from 'lucide-react';
+import { BarChart3, CheckCircle2, Clock3, Download, FileJson, Hourglass, RotateCcw, Table, TrendingUp } from 'lucide-react';
 import StatsChart from './StatsChart';
-import { AppHeader, StatCard, Surface } from '@/components/ui';
+import { AppHeader, Notice, StatCard, Surface } from '@/components/ui';
+import { getEffectivenessMetrics } from '@/lib/metrics';
 import { toFa } from '@/lib/format';
 
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
+/** ساعت → «۵ ساعت» یا «۲ روز» */
+function formatDuration(hours: number | null): string {
+  if (hours == null) return '—';
+  if (hours < 1) return 'کمتر از یک ساعت';
+  if (hours < 48) return `${toFa(Math.round(hours))} ساعت`;
+  return `${toFa(Math.round(hours / 24))} روز`;
+}
+const percent = (v: number | null) => (v == null ? '—' : `${toFa(Math.round(v * 100))}٪`);
+
 export default async function StatsPage() {
   // Aggregate stats
   const totalReports = await prisma.report.count();
+  const effectiveness = await getEffectivenessMetrics();
   
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -52,6 +63,26 @@ export default async function StatsPage() {
           <StatCard label="دسته فعال" value={toFa(categoryStats.filter((c) => c.count > 0).length)} icon={TrendingUp} tone="amber" />
           <StatCard label="خروجی عمومی" value="CSV/JSON" icon={Download} tone="slate" />
         </div>
+
+        <Surface className="p-4">
+          <h2 className="font-extrabold text-slate-950">اثربخشی رسیدگی</h2>
+          <p className="mt-1 text-xs leading-6 text-slate-500">
+            تعداد گزارش به‌تنهایی معیار موفقیت نیست؛ این شاخص‌ها نشان می‌دهند گزارش‌ها چقدر به نتیجه رسیده‌اند.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-5">
+            <StatCard label="گزارش‌های حل‌شده" value={percent(effectiveness.resolutionRate)} icon={CheckCircle2} tone="teal" />
+            <StatCard label="میانهٔ زمان تا اولین پاسخ" value={formatDuration(effectiveness.medianFirstResponseHours)} icon={Clock3} />
+            <StatCard label="میانهٔ زمان تا رفع" value={formatDuration(effectiveness.medianResolveHours)} icon={TrendingUp} tone="amber" />
+            <StatCard label="بازگشایی پس از «حل شد»" value={percent(effectiveness.reopenRate)} icon={RotateCcw} tone="slate" />
+            <StatCard label="بدون پاسخ بیش از ۳ روز" value={toFa(effectiveness.unansweredCount)} icon={Hourglass} tone="amber" />
+          </div>
+        </Surface>
+
+        <Notice tone="info" className="text-xs leading-6">
+          این داده‌ها فقط نظر مسافرانی را نشان می‌دهد که گوشی هوشمند و اینترنت دارند و تصمیم به گزارش گرفته‌اند؛
+          نماینده همهٔ مسافران نیست. تعداد خام گزارش هر ایستگاه هم با حجم مسافر آن تفاوت دارد و برای مقایسهٔ
+          کیفیت ایستگاه‌ها به‌تنهایی کافی نیست.
+        </Notice>
 
         <Surface className="p-4">
           <div className="mb-2 flex items-center justify-between">

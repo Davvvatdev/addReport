@@ -47,6 +47,7 @@ export function ResolutionVote({ reportId, yes, no }: { reportId: string; yes: n
   const [votes, setVotes] = useState({ yes, no });
   const [voted, setVoted] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reopened, setReopened] = useState(false);
 
   async function vote(resolved: boolean) {
     setBusy(true);
@@ -57,12 +58,22 @@ export function ResolutionVote({ reportId, yes, no }: { reportId: string; yes: n
         body: JSON.stringify({ reporterToken: getReporterToken(), resolved }),
       });
       if (res.ok) {
-        setVotes(await res.json());
+        const data = await res.json();
+        setVotes({ yes: data.yes, no: data.no });
         setVoted(resolved);
+        if (data.reopened) setReopened(true);
       }
     } finally {
       setBusy(false);
     }
+  }
+
+  if (reopened) {
+    return (
+      <p className="rounded-xl bg-amber-50 p-3 text-sm font-bold leading-7 text-amber-900">
+        با رأی شما و دیگران، این گزارش دوباره به صف بررسی برگشت.
+      </p>
+    );
   }
 
   return (

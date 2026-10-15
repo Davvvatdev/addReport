@@ -78,3 +78,23 @@ export function lineTermini(lineName: string): string[] {
   if (!m) return [];
   return m[1].split(/\s+-\s+/).map((s) => s.trim()).filter(Boolean);
 }
+
+/** توضیح کوتاه هر سطح شدت، کنار انتخاب شدت نمایش داده می‌شود */
+export const SEVERITY_HINT: Record<Severity, string> = {
+  low: 'اختلال جزئی؛ سفر ادامه می‌یابد.',
+  medium: 'اختلال محسوس؛ باعث معطلی یا ناراحتی می‌شود.',
+  high: 'اختلال جدی در سفر یا مانع استفاده برای برخی مسافران.',
+  critical: 'خطر ایمنی یا توقف کامل خدمت.',
+};
+
+/** گزارشی که بعد از این تعداد روز هنوز «ثبت شد» مانده، «بدون پاسخ» نمایش داده می‌شود */
+export const UNANSWERED_DAYS = 3;
+export const isUnanswered = (status: string, createdAt: Date | string, now = Date.now()) =>
+  status === 'submitted' && now - new Date(createdAt).getTime() > UNANSWERED_DAYS * 864e5;
+
+/** حداقل رأی «هنوز نه» (و بیشتر از رأی «بله») برای بازگشایی خودکار گزارش حل‌شده */
+export const REOPEN_MIN_NO_VOTES = 3;
+export const REOPEN_NOTE_PREFIX = 'بازگشایی خودکار';
+
+/** بازهٔ روز برای هشدار «این مشکل قبلاً گزارش شده» پیش از ثبت */
+export const SIMILAR_WINDOW_DAYS = 14;

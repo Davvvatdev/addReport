@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { formatJalali, toFa } from '@/lib/format';
 import { AppHeader, Notice, Surface } from '@/components/ui';
 import { ConfirmButton } from '@/components/CitizenActions';
-import { STATUS_LABEL, STATUSES, severityCls, severityLabel, statusCls, statusLabel } from '@/lib/report-meta';
+import { STATUS_LABEL, STATUSES, isUnanswered, severityCls, severityLabel, statusCls, statusLabel } from '@/lib/report-meta';
 
 export const metadata: Metadata = { title: 'گزارش‌های عمومی | دیده‌بان حمل‌ونقل تهران' };
 export const dynamic = 'force-dynamic';
@@ -151,6 +151,9 @@ export default async function PublicList({ searchParams }: { searchParams: Promi
                 <span className={`rounded-full px-2 py-0.5 text-[11px] ${statusCls(r.status)}`}>
                   {statusLabel(r.status)}
                 </span>
+                {isUnanswered(r.status, r.createdAt) && (
+                  <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] text-rose-800">بدون پاسخ</span>
+                )}
               </span>
             </div>
             {r.statusNote && <p className="text-xs leading-6 text-slate-600"><b>پاسخ:</b> {r.statusNote}</p>}

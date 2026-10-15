@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Prisma } from '@prisma/client';
-import { BarChart3, Camera, CheckCircle, Clock3, Copy, Eye, Inbox, LogOut, ShieldCheck, XCircle } from 'lucide-react';
+import { BarChart3, Camera, CheckCircle, Clock3, Copy, Eye, Inbox, LogOut, QrCode, ShieldCheck, XCircle } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { isAdminAuthenticated } from '@/lib/adminAuth';
 import { adminLogout } from '@/app/actions/admin';
@@ -90,6 +90,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         dark
         action={
           <div className="flex items-center gap-1">
+            <Link href="/admin/qr" className="tap flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-bold text-slate-200 active:bg-white/10">
+              <QrCode size={16} /> QR
+            </Link>
             <Link href="/admin/analytics" className="tap flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-bold text-slate-200 active:bg-white/10">
               <BarChart3 size={16} /> تحلیل
             </Link>

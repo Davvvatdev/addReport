@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Search } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatJalali, toFa, trackingCode } from '@/lib/format';
-import { statusCls, statusLabel, severityLabel, UNITS, type Unit } from '@/lib/report-meta';
+import { isUnanswered, statusCls, statusLabel, severityLabel, UNITS, UNANSWERED_DAYS, type Unit } from '@/lib/report-meta';
 import { AppHeader, Notice, Surface } from '@/components/ui';
 import { ResolutionVote } from '@/components/CitizenActions';
 
@@ -74,6 +74,11 @@ export default async function TrackPage({ searchParams }: { searchParams: Promis
                   {report.station?.name ?? 'ایستگاه نامشخص'}
                   {report.line ? ` · ${report.line.name}` : ''} · شدت {severityLabel(report.severity)}
                   {report._count.confirmations > 0 && ` · ${toFa(report._count.confirmations)} نفر دیگر هم دیده‌اند`}
+                </p>
+              )}
+              {isUnanswered(report.status, report.createdAt) && (
+                <p className="rounded-xl bg-rose-50 p-3 text-xs font-bold leading-6 text-rose-800">
+                  این گزارش بیش از {toFa(UNANSWERED_DAYS)} روز است که پاسخی نگرفته و در فهرست عمومی با برچسب «بدون پاسخ» دیده می‌شود.
                 </p>
               )}
               {report.assignedUnit && (

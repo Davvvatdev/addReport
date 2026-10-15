@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { REOPEN_MIN_NO_VOTES, REOPEN_NOTE_PREFIX } from '@/lib/report-meta';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,5 +22,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     prisma.resolutionVote.count({ where: { reportId: id, resolved: true } }),
     prisma.resolutionVote.count({ where: { reportId: id, resolved: false } }),
   ]);
+
+  // وقتی شهروندان بیشتری می‌گویند «هنوز حل نشده»، گزارش دوباره به صف رسیدگی برمی‌گردد
+  if (no >= REOPEN_MIN_NO_VOTES && no > yes) {
+    const note = `${REOPEN_NOTE_PREFIX}: ${no} نفر اعلام کردند مشکل هنوز برطرف نشده است.`;
+    await prisma.$transaction([
+      prisma.report.update({
+        where: { id },
+        data: { status: 'under_review', statusNote: note, events: { create: { status: 'under_review', note } } },
+      }),
+      // چرخهٔ رأی‌گیری بعد از رفع بعدی از نو شروع می‌شود
+      prisma.resolutionVote.deleteMany({ where: { reportId: id } }),
+    ]);
+    return Response.json({ yes: 0, no: 0, reopened: true });
+  }
   return Response.json({ yes, no });
 }
