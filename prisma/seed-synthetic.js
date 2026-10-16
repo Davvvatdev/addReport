@@ -96,7 +96,7 @@ async function main() {
       const line = pick(linesByMode[mode])
       const pool = stationsByLine[line.id]
       const station = rnd() < 0.3 ? (pool.filter((s) => hot.has(s.id))[0] ? pick(pool.filter((s) => hot.has(s.id))) : pick(pool)) : pick(pool)
-      const modeSubs = subs.filter((s) => s.modes.split(',').includes(mode))
+      const modeSubs = subs.filter((s) => s.categoryId !== '6' && s.modes.split(',').includes(mode)) // دسته‌ی ۶ (بلیت و پرداخت) نه: فعلاً رایگان است
       const sub = pick(modeSubs)
       const hour = weighted(HOUR_W)
       const occurred = new Date(t + hour * 3600000 + int(0, 59) * 60000 + int(0, 59) * 1000 - TEHRAN_OFFSET)
