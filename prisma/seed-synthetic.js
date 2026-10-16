@@ -76,13 +76,20 @@ async function main() {
   const votes = []
   let dayIndex = 0
 
+  const TARGET = 450
+  const rawCounts = []
+  for (let t = START, d = 0; t <= END; t += DAY, d++) {
+    const dow = new Date(t).getUTCDay()
+    rawCounts.push((0.55 + (d / 25) * 0.9) * (dow === 5 ? 0.45 : dow === 4 ? 0.8 : 1) * (0.8 + rnd() * 0.4))
+  }
+  const rawSum = rawCounts.reduce((a, b) => a + b, 0)
+  const exact = rawCounts.map((c) => (c / rawSum) * TARGET)
+  const dayCounts = exact.map(Math.floor)
+  let rest = TARGET - dayCounts.reduce((a, b) => a + b, 0)
+  exact.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).slice(0, rest).forEach(([, i]) => dayCounts[i]++)
+
   for (let t = START; t <= END; t += DAY, dayIndex++) {
-    const date = new Date(t)
-    const dow = date.getUTCDay() // 5 = جمعه
-    // رشد تدریجی استفاده + الگوی هفتگی (جمعه کم، شنبه تا چهارشنبه پرتردد)
-    const growth = 0.55 + (dayIndex / 25) * 0.9
-    const weekly = dow === 5 ? 0.45 : dow === 4 ? 0.8 : 1
-    const n = Math.max(6, Math.round(26 * growth * weekly * (0.8 + rnd() * 0.4)))
+    const n = dayCounts[dayIndex]
 
     for (let i = 0; i < n; i++) {
       const mode = weighted([['metro', 6], ['bus', 3], ['brt', 3]].filter(([m]) => linesByMode[m].length))
@@ -100,12 +107,11 @@ async function main() {
       const severity = sensitive ? weighted([['high', 4], ['critical', 2], ['medium', 3]])
         : weighted([['low', 3], ['medium', 6], ['high', 2], ['critical', 0.4]])
       const ageDays = (END + DAY - t) / DAY
-      // وضعیت: گزارش‌های قدیمی‌تر بیشتر رسیدگی شده‌اند
+      // وضعیت: فقط ثبت‌شده / در حال بررسی / در حال انجام (بدون رد، ارجاع یا رفع)
       let status = 'submitted'
       const p = rnd()
-      if (ageDays > 18) status = p < 0.55 ? 'resolved' : p < 0.7 ? 'in_progress' : p < 0.8 ? 'rejected' : p < 0.9 ? 'assigned' : 'under_review'
-      else if (ageDays > 8) status = p < 0.35 ? 'resolved' : p < 0.55 ? 'in_progress' : p < 0.7 ? 'assigned' : p < 0.85 ? 'under_review' : p < 0.9 ? 'rejected' : 'submitted'
-      else status = p < 0.12 ? 'resolved' : p < 0.25 ? 'in_progress' : p < 0.4 ? 'under_review' : p < 0.5 ? 'assigned' : 'submitted'
+      if (ageDays > 12) status = p < 0.4 ? 'in_progress' : p < 0.75 ? 'under_review' : 'submitted'
+      else status = p < 0.15 ? 'in_progress' : p < 0.4 ? 'under_review' : 'submitted'
 
       const id = uuid()
       const token = pick(tokens)
@@ -121,13 +127,13 @@ async function main() {
         severity, impact: weighted([['time_loss', 5], ['safety_risk', sensitive ? 5 : 1], ['health', 1], ['could_not_board', 2], ['accessibility', 1]]),
         tripPurpose: weighted(purposes), riderType: weighted(riderTypes), accessNeed: rnd() < 0.9 ? 'none' : 'mobility',
         gender, isAnonymous: true, reporterToken: token, status,
-        assignedUnit: ['assigned', 'in_progress', 'resolved'].includes(status) ? pick(['فنی', 'بهره‌برداری', 'ایمنی', 'خدمات مشتریان']) : null,
+        assignedUnit: status === 'in_progress' ? pick(['فنی', 'بهره‌برداری', 'ایمنی', 'خدمات مشتریان']) : null,
         syncStatus: 'synced', isSynthetic: true,
       })
 
       // رویدادهای تغییر وضعیت
-      const path = ['submitted', 'under_review', 'assigned', 'in_progress', 'resolved']
-      const finalIdx = status === 'rejected' ? 1 : path.indexOf(status)
+      const path = ['submitted', 'under_review', 'in_progress']
+      const finalIdx = path.indexOf(status)
       let when = created.getTime()
       for (let k = 0; k <= finalIdx; k++) {
         when += k === 0 ? 0 : int(2, 36) * 3600000
@@ -137,7 +143,7 @@ async function main() {
       }
 
       // تأیید «من هم همین را دیدم» از کاربران دیگر
-      const nConf = weighted([[0, 5], [1, 3], [2, 2], [4, 1]])
+      const nConf = 0
       const used = new Set([token])
       for (let c = 0; c < nConf; c++) {
         const tk = pick(tokens)
@@ -145,11 +151,6 @@ async function main() {
         used.add(tk)
         confirmations.push({ id: uuid(), reportId: id, reporterToken: tk,
           createdAt: new Date(created.getTime() + int(10, 600) * 60000), isSynthetic: true })
-      }
-      // رأی «حل شد/نشد» برای گزارش‌های رسیدگی‌شده
-      if (status === 'resolved' && rnd() < 0.6) {
-        votes.push({ id: uuid(), reportId: id, reporterToken: token, resolved: rnd() < 0.78,
-          createdAt: new Date(Math.min((END + DAY), when + int(1, 48) * 3600000)), isSynthetic: true })
       }
     }
   }
